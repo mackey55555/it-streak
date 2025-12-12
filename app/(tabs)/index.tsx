@@ -1,21 +1,38 @@
-import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Button, Card, ProgressBar, Text } from '../../components/ui';
 import { colors, spacing, borderRadius } from '../../constants/theme';
+import { useStreak } from '../../hooks/useStreak';
+import { useDailyProgress } from '../../hooks/useDailyProgress';
+import { useState } from 'react';
 
 export default function HomeScreen() {
   const router = useRouter();
-  
-  // モックデータ
-  const streakDays = 12;
-  const todayProgress = 3;
-  const dailyGoal = 5;
-  const progressPercentage = todayProgress / dailyGoal;
+  const { currentStreak, loading: streakLoading, refetch: refetchStreak } = useStreak();
+  const { 
+    todayProgress, 
+    dailyGoal, 
+    progressPercentage,
+    isGoalCompleted,
+    loading: progressLoading, 
+    refetch: refetchProgress 
+  } = useDailyProgress();
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([refetchStreak(), refetchProgress()]);
+    setRefreshing(false);
+  };
 
   const handleStartLearning = () => {
     router.push('/quiz');
   };
+
+  const loading = streakLoading || progressLoading;
+  const remaining = Math.max(0, dailyGoal - todayProgress.answered);
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -23,34 +40,54 @@ export default function HomeScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
       >
-        {/* ストリーク表示 */}
-        <Card style={styles.streakCard}>
-          <View style={styles.streakContent}>
-            <Text variant="h1" style={styles.streakEmoji}>🔥</Text>
-            <View style={styles.streakTextContainer}>
-              <Text variant="h2" style={styles.streakNumber}>{streakDays}</Text>
-              <Text variant="body" color={colors.textLight}>日連続！</Text>
-            </View>
+        {loading && !currentStreak ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={colors.primary} />
           </View>
-        </Card>
+        ) : (
+          <>
+            {/* ストリーク表示 */}
+            <Card style={styles.streakCard}>
+              <View style={styles.streakContent}>
+                <Text variant="h1" style={styles.streakEmoji}>🔥</Text>
+                <View style={styles.streakTextContainer}>
+                  <Text variant="h2" style={styles.streakNumber}>{currentStreak}</Text>
+                  <Text variant="body" color={colors.textLight}>日連続！</Text>
+                </View>
+              </View>
+            </Card>
 
-        {/* 今日の進捗カード */}
-        <Card style={styles.progressCard}>
-          <Text variant="h3" style={styles.progressTitle}>今日の進捗</Text>
-          <View style={styles.progressInfo}>
-            <Text variant="h2" style={styles.progressText}>
-              {todayProgress} / {dailyGoal} 問
-            </Text>
-          </View>
-          <ProgressBar 
-            progress={progressPercentage} 
-            style={styles.progressBar}
-          />
-          <Text variant="caption" style={styles.progressCaption}>
-            あと{dailyGoal - todayProgress}問で今日の目標達成！
-          </Text>
-        </Card>
+            {/* 今日の進捗カード */}
+            <Card style={[
+              styles.progressCard,
+              isGoalCompleted && styles.progressCardCompleted
+            ]}>
+              <Text variant="h3" style={styles.progressTitle}>今日の進捗</Text>
+              <View style={styles.progressInfo}>
+                <Text variant="h2" style={styles.progressText}>
+                  {todayProgress.answered} / {dailyGoal} 問
+                </Text>
+              </View>
+              <ProgressBar 
+                progress={progressPercentage / 100} 
+                style={styles.progressBar}
+              />
+              {isGoalCompleted ? (
+                <Text variant="caption" style={styles.progressCaption}>
+                  🎉 今日の目標達成！素晴らしい！
+                </Text>
+              ) : (
+                <Text variant="caption" style={styles.progressCaption}>
+                  あと{remaining}問で今日の目標達成！
+                </Text>
+              )}
+            </Card>
+          </>
+        )}
 
         {/* 学習開始ボタン */}
         <Button
@@ -108,6 +145,10 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     paddingBottom: spacing.xxl,
   },
+  loadingContainer: {
+    padding: spacing.xxl,
+    alignItems: 'center',
+  },
   streakCard: {
     marginBottom: spacing.lg,
     backgroundColor: colors.streak,
@@ -132,6 +173,10 @@ const styles = StyleSheet.create({
   },
   progressCard: {
     marginBottom: spacing.xl,
+  },
+  progressCardCompleted: {
+    borderWidth: 2,
+    borderColor: colors.primary,
   },
   progressTitle: {
     marginBottom: spacing.md,
