@@ -1,33 +1,55 @@
-import { useState } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { useState, useEffect } from 'react';
+import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Button, Card, ProgressBar, Text } from '../../components/ui';
 import { colors, spacing, borderRadius } from '../../constants/theme';
-
-// モックデータ
-const mockQuestion = {
-  question: "OSI基本参照モデルにおいて、ネットワーク層の役割はどれか。",
-  choices: [
-    "A: 伝送路上のビット列の伝送",
-    "B: 隣接ノード間のデータ転送",
-    "C: エンドツーエンドのデータ転送の信頼性確保",
-    "D: ネットワーク上の経路選択"
-  ],
-  correctAnswer: "D",
-  explanation: "ネットワーク層（第3層）は、異なるネットワーク間の経路選択（ルーティング）を行う層です。"
-};
+import { useQuiz } from '../../hooks/useQuiz';
+import { useDailyProgress } from '../../hooks/useDailyProgress';
+import { useStreak } from '../../hooks/useStreak';
 
 type AnswerState = 'unanswered' | 'correct' | 'incorrect';
 
 export default function QuizScreen() {
   const router = useRouter();
+  const { 
+    currentQuestion, 
+    currentIndex, 
+    totalQuestions, 
+    isFinished,
+    correctCount,
+    loading, 
+    error,
+    fetchQuestions,
+    submitAnswer,
+    nextQuestion,
+  } = useQuiz(5);
+  
+  const { recordProgress } = useDailyProgress();
+  const { updateStreak } = useStreak();
+
   const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
   const [answerState, setAnswerState] = useState<AnswerState>('unanswered');
-  
-  const currentQuestion = 3;
-  const totalQuestions = 5;
-  const progress = currentQuestion / totalQuestions;
+  const [currentExplanation, setCurrentExplanation] = useState<string>('');
+
+  // 初回読み込み
+  useEffect(() => {
+    fetchQuestions();
+  }, []);
+
+  // クイズ終了時
+  useEffect(() => {
+    if (isFinished && totalQuestions > 0) {
+      updateStreak();
+      router.replace({
+        pathname: '/quiz/result',
+        params: { 
+          correct: correctCount.toString(), 
+          total: totalQuestions.toString() 
+        }
+      });
+    }
+  }, [isFinished, totalQuestions]);
 
   const handleChoiceSelect = (choice: string) => {
     if (answerState === 'unanswered') {
@@ -35,30 +57,36 @@ export default function QuizScreen() {
     }
   };
 
-  const handleSubmitAnswer = () => {
-    if (!selectedChoice) return;
+  const handleSubmitAnswer = async () => {
+    if (!selectedChoice || !currentQuestion) return;
     
-    const isCorrect = selectedChoice === mockQuestion.correctAnswer;
-    setAnswerState(isCorrect ? 'correct' : 'incorrect');
+    const result = await submitAnswer(selectedChoice as 'A' | 'B' | 'C' | 'D');
+    if (result) {
+      setAnswerState(result.isCorrect ? 'correct' : 'incorrect');
+      setCurrentExplanation(currentQuestion.explanation || '');
+      recordProgress(result.isCorrect);
+    }
   };
 
   const handleNext = () => {
-    // 次の問題へ（実装時はロジックを追加）
     setSelectedChoice(null);
     setAnswerState('unanswered');
+    setCurrentExplanation('');
+    nextQuestion();
   };
 
   const handleClose = () => {
     router.back();
   };
 
-  const getChoiceStyle = (choice: string) => {
+  const getChoiceStyle = (choiceLetter: string) => {
     if (answerState === 'unanswered') {
-      return selectedChoice === choice ? styles.choiceSelected : styles.choice;
+      return selectedChoice === choiceLetter 
+        ? [styles.choice, styles.choiceSelected] 
+        : styles.choice;
     }
     
-    const choiceLetter = choice.split(':')[0];
-    if (choiceLetter === mockQuestion.correctAnswer) {
+    if (currentQuestion && choiceLetter === currentQuestion.correct_answer) {
       return [styles.choice, styles.choiceCorrect];
     }
     if (choiceLetter === selectedChoice) {
@@ -66,6 +94,45 @@ export default function QuizScreen() {
     }
     return styles.choice;
   };
+
+  // ローディング中
+  if (loading && !currentQuestion) {
+    return (
+      <SafeAreaView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text variant="body" style={styles.loadingText}>問題を読み込み中...</Text>
+      </SafeAreaView>
+    );
+  }
+
+  // エラー時
+  if (error) {
+    return (
+      <SafeAreaView style={styles.loadingContainer}>
+        <Text variant="h3" color={colors.incorrect}>エラーが発生しました</Text>
+        <Text variant="body" style={styles.errorText}>{error}</Text>
+        <Button title="戻る" onPress={handleClose} style={styles.errorButton} />
+      </SafeAreaView>
+    );
+  }
+
+  // 問題がない場合
+  if (!currentQuestion) {
+    return (
+      <SafeAreaView style={styles.loadingContainer}>
+        <Text variant="h3">問題がありません</Text>
+        <Button title="戻る" onPress={handleClose} style={styles.errorButton} />
+      </SafeAreaView>
+    );
+  }
+
+  const progress = totalQuestions > 0 ? (currentIndex + 1) / totalQuestions : 0;
+  const choices = [
+    { letter: 'A', text: currentQuestion.choice_a },
+    { letter: 'B', text: currentQuestion.choice_b },
+    { letter: 'C', text: currentQuestion.choice_c },
+    { letter: 'D', text: currentQuestion.choice_d },
+  ];
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -78,7 +145,7 @@ export default function QuizScreen() {
           <ProgressBar progress={progress} height={8} />
         </View>
         <Text variant="caption" style={styles.questionNumber}>
-          {currentQuestion} / {totalQuestions}
+          {currentIndex + 1} / {totalQuestions}
         </Text>
       </View>
 
@@ -91,17 +158,17 @@ export default function QuizScreen() {
         {/* 問題カード */}
         <Card style={styles.questionCard}>
           <Text variant="body" style={styles.questionText}>
-            {mockQuestion.question}
+            {currentQuestion.question_text}
           </Text>
         </Card>
 
         {/* 選択肢 */}
         <View style={styles.choicesContainer}>
-          {mockQuestion.choices.map((choice, index) => (
+          {choices.map((choice) => (
             <TouchableOpacity
-              key={index}
-              style={getChoiceStyle(choice)}
-              onPress={() => handleChoiceSelect(choice.split(':')[0])}
+              key={choice.letter}
+              style={getChoiceStyle(choice.letter)}
+              onPress={() => handleChoiceSelect(choice.letter)}
               disabled={answerState !== 'unanswered'}
               activeOpacity={0.7}
             >
@@ -109,10 +176,10 @@ export default function QuizScreen() {
                 variant="body" 
                 style={[
                   styles.choiceText,
-                  selectedChoice === choice.split(':')[0] && answerState === 'unanswered' && styles.choiceTextSelected,
+                  selectedChoice === choice.letter && answerState === 'unanswered' && styles.choiceTextSelected,
                 ]}
               >
-                {choice}
+                {choice.letter}: {choice.text}
               </Text>
             </TouchableOpacity>
           ))}
@@ -143,15 +210,17 @@ export default function QuizScreen() {
                   <Text variant="h3" style={styles.resultTitle}>
                     {answerState === 'correct' ? '正解！' : '不正解'}
                   </Text>
-                  <Text variant="body" style={styles.explanation}>
-                    {mockQuestion.explanation}
-                  </Text>
+                  {currentExplanation ? (
+                    <Text variant="body" style={styles.explanation}>
+                      {currentExplanation}
+                    </Text>
+                  ) : null}
                 </View>
               </View>
             </View>
             
             <Button
-              title="次へ"
+              title={currentIndex + 1 >= totalQuestions ? "結果を見る" : "次へ"}
               onPress={handleNext}
               style={styles.actionButton}
             />
@@ -166,6 +235,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    padding: spacing.xl,
+    gap: spacing.lg,
+  },
+  loadingText: {
+    marginTop: spacing.md,
+  },
+  errorText: {
+    textAlign: 'center',
+    color: colors.textLight,
+  },
+  errorButton: {
+    marginTop: spacing.lg,
+    minWidth: 120,
   },
   header: {
     paddingHorizontal: spacing.lg,
@@ -212,19 +300,19 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   choiceSelected: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.primary + '10',
     borderColor: colors.primary,
-    borderWidth: 3,
+    borderWidth: 2,
   },
   choiceCorrect: {
     backgroundColor: colors.correct + '15',
     borderColor: colors.correct,
-    borderWidth: 3,
+    borderWidth: 2,
   },
   choiceIncorrect: {
     backgroundColor: colors.incorrect + '15',
     borderColor: colors.incorrect,
-    borderWidth: 3,
+    borderWidth: 2,
   },
   choiceText: {
     fontSize: 16,
@@ -275,4 +363,3 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
 });
-
