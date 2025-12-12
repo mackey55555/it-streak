@@ -8,7 +8,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
 
 export default function StatsScreen() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { currentStreak, longestStreak } = useStreak();
   const [stats, setStats] = useState({
     totalAnswers: 0,
@@ -17,15 +17,24 @@ export default function StatsScreen() {
     totalDays: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchStats();
-  }, []);
+    if (!authLoading && user) {
+      fetchStats();
+    } else if (!authLoading && !user) {
+      setLoading(false);
+    }
+  }, [user, authLoading]);
 
   const fetchStats = async () => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
+    setError(null);
     try {
       // 全回答数と正解数を取得
       const { data: answers, error: answersError } = await supabase
@@ -55,18 +64,33 @@ export default function StatsScreen() {
         accuracy,
         totalDays,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching stats:', error);
+      setError(error.message || 'データの取得に失敗しました');
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
+          <Text variant="body" color={colors.textLight} style={styles.loadingText}>
+            データを読み込み中...
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.loadingContainer}>
+          <Text variant="h3" color={colors.incorrect}>エラーが発生しました</Text>
+          <Text variant="body" style={styles.errorText}>{error}</Text>
         </View>
       </SafeAreaView>
     );
@@ -159,6 +183,15 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: spacing.xl,
+  },
+  loadingText: {
+    marginTop: spacing.md,
+  },
+  errorText: {
+    marginTop: spacing.md,
+    textAlign: 'center',
+    color: colors.textLight,
   },
   header: {
     marginBottom: spacing.xl,
