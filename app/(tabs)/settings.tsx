@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Button, Card, Text } from '../../components/ui';
 import { colors, spacing, borderRadius, fontSizes } from '../../constants/theme';
 import { useAuth } from '../../hooks/useAuth';
+import { usePushNotifications } from '../../hooks/usePushNotifications';
 import { supabase } from '../../lib/supabase';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
+  const { registerForPushNotifications } = usePushNotifications();
   const [dailyGoal, setDailyGoal] = useState('5');
+  const [notificationEnabled, setNotificationEnabled] = useState(true);
+  const [notificationTime, setNotificationTime] = useState('19:00');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -25,13 +29,18 @@ export default function SettingsScreen() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('daily_goal')
+        .select('daily_goal, notification_enabled, notification_time')
         .eq('id', user.id)
         .single();
 
       if (error) throw error;
       if (data) {
         setDailyGoal(data.daily_goal.toString());
+        setNotificationEnabled(data.notification_enabled ?? true);
+        if (data.notification_time) {
+          // TIME型は "HH:MM:SS" 形式なので "HH:MM" に変換
+          setNotificationTime(data.notification_time.substring(0, 5));
+        }
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -59,6 +68,60 @@ export default function SettingsScreen() {
       if (error) throw error;
       
       Alert.alert('成功', '目標問題数を更新しました');
+    } catch (error: any) {
+      Alert.alert('エラー', error.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggleNotification = async (value: boolean) => {
+    if (!user) return;
+
+    setNotificationEnabled(value);
+
+    // 通知を有効にする場合は、Push通知の登録も行う
+    if (value) {
+      await registerForPushNotifications();
+    }
+
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ notification_enabled: value })
+        .eq('id', user.id);
+
+      if (error) throw error;
+    } catch (error: any) {
+      console.error('Error updating notification setting:', error);
+      Alert.alert('エラー', '通知設定の更新に失敗しました');
+      setNotificationEnabled(!value); // ロールバック
+    }
+  };
+
+  const handleSaveNotificationTime = async () => {
+    if (!user) return;
+
+    // 時刻形式の検証（HH:MM）
+    const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!timeRegex.test(notificationTime)) {
+      Alert.alert('エラー', '正しい時刻形式（HH:MM）で入力してください');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      // TIME型は "HH:MM:SS" 形式が必要
+      const timeWithSeconds = `${notificationTime}:00`;
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ notification_time: timeWithSeconds })
+        .eq('id', user.id);
+
+      if (error) throw error;
+      
+      Alert.alert('成功', '通知時刻を更新しました');
     } catch (error: any) {
       Alert.alert('エラー', error.message);
     } finally {
@@ -138,6 +201,59 @@ export default function SettingsScreen() {
               disabled={loading || saving}
               style={styles.saveButton}
             />
+          </Card>
+        </View>
+
+        {/* 通知設定 */}
+        <View style={styles.section}>
+          <Text variant="h3" style={styles.sectionTitle}>通知設定</Text>
+          <Card style={styles.card}>
+            <View style={styles.notificationRow}>
+              <View style={styles.notificationInfo}>
+                <Text variant="body" style={styles.notificationLabel}>学習リマインダー</Text>
+                <Text variant="caption" color={colors.textLight}>
+                  毎日の学習をリマインドします
+                </Text>
+              </View>
+              <Switch
+                value={notificationEnabled}
+                onValueChange={handleToggleNotification}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor={colors.background}
+              />
+            </View>
+
+            {notificationEnabled && (
+              <>
+                <View style={styles.divider} />
+                <View style={styles.timeContainer}>
+                  <View style={styles.timeInfo}>
+                    <Text variant="body" style={styles.timeLabel}>通知時刻</Text>
+                    <Text variant="caption" color={colors.textLight}>
+                      毎日この時刻に通知を送信します
+                    </Text>
+                  </View>
+                  <View style={styles.timeInputContainer}>
+                    <TextInput
+                      style={styles.timeInput}
+                      value={notificationTime}
+                      onChangeText={setNotificationTime}
+                      placeholder="19:00"
+                      placeholderTextColor={colors.textLight}
+                      maxLength={5}
+                    />
+                    <Button
+                      title="保存"
+                      onPress={handleSaveNotificationTime}
+                      loading={saving}
+                      disabled={loading || saving}
+                      style={styles.timeSaveButton}
+                      variant="ghost"
+                    />
+                  </View>
+                </View>
+              </>
+            )}
           </Card>
         </View>
 
@@ -252,5 +368,53 @@ const styles = StyleSheet.create({
   version: {
     textAlign: 'center',
     marginTop: spacing.xl,
+  },
+  notificationRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  notificationInfo: {
+    flex: 1,
+    marginRight: spacing.md,
+  },
+  notificationLabel: {
+    fontWeight: '600',
+    marginBottom: spacing.xs,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: spacing.lg,
+  },
+  timeContainer: {
+    gap: spacing.md,
+  },
+  timeInfo: {
+    marginBottom: spacing.xs,
+  },
+  timeLabel: {
+    fontWeight: '600',
+    marginBottom: spacing.xs,
+  },
+  timeInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  timeInput: {
+    backgroundColor: colors.surface,
+    borderWidth: 2,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    fontSize: fontSizes.lg,
+    fontWeight: '600',
+    textAlign: 'center',
+    width: 100,
+    color: colors.text,
+  },
+  timeSaveButton: {
+    flex: 1,
   },
 });

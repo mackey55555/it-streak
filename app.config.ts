@@ -30,6 +30,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     'expo-router',
+    [
+      'expo-notifications',
+      {
+        icon: './assets/notification-icon.png',
+        color: '#58CC02',
+        sounds: [],
+      },
+    ],
   ],
   scheme: 'quizapp',
   extra: {

@@ -1,11 +1,13 @@
 import { useEffect } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { useAuth } from '../hooks/useAuth';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { colors } from '../constants/theme';
 
 export default function RootLayout() {
   const { user, loading } = useAuth();
+  const { registerForPushNotifications } = usePushNotifications();
   const segments = useSegments();
   const router = useRouter();
 
@@ -22,6 +24,13 @@ export default function RootLayout() {
       router.replace('/(tabs)');
     }
   }, [user, loading, segments]);
+
+  // 認証済みユーザーがいる場合、Push通知を登録
+  useEffect(() => {
+    if (user && !loading) {
+      registerForPushNotifications();
+    }
+  }, [user, loading]);
 
   if (loading) {
     return (
