@@ -1,0 +1,12 @@
+{
+  "name": "seed-scripts",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "seed": "tsx seed-questions.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.0"
+  }
+}
+
