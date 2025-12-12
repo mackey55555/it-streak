@@ -16,6 +16,17 @@ export default function StatsScreen() {
     accuracy: 0,
     totalDays: 0,
   });
+  const [categoryStats, setCategoryStats] = useState<Array<{
+    categoryId: string;
+    categoryName: string;
+    total: number;
+    correct: number;
+    accuracy: number;
+  }>>([]);
+  const [weeklyProgress, setWeeklyProgress] = useState<Array<{
+    date: string;
+    completed: boolean;
+  }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,6 +68,64 @@ export default function StatsScreen() {
       if (progressError) throw progressError;
 
       const totalDays = progress?.length || 0;
+
+      // 分野別の正答率を取得
+      const { data: answersWithQuestions, error: categoryError } = await supabase
+        .from('user_answers')
+        .select(`
+          is_correct,
+          question_id,
+          questions!inner(
+            category_id,
+            categories(name)
+          )
+        `)
+        .eq('user_id', user.id);
+
+      if (categoryError) throw categoryError;
+
+      // 分野別に集計
+      const categoryMap = new Map<string, { total: number; correct: number; name: string }>();
+      
+      answersWithQuestions?.forEach((answer: any) => {
+        const question = answer.questions;
+        const categoryId = question?.category_id;
+        const categoryName = question?.categories?.name || '未分類';
+        
+        if (categoryId) {
+          const current = categoryMap.get(categoryId) || { total: 0, correct: 0, name: categoryName };
+          current.total++;
+          if (answer.is_correct) current.correct++;
+          categoryMap.set(categoryId, current);
+        }
+      });
+
+      const categoryStatsArray = Array.from(categoryMap.entries()).map(([categoryId, data]) => ({
+        categoryId,
+        categoryName: data.name,
+        total: data.total,
+        correct: data.correct,
+        accuracy: data.total > 0 ? Math.round((data.correct / data.total) * 100) : 0,
+      })).sort((a, b) => b.total - a.total); // 回答数の多い順
+
+      setCategoryStats(categoryStatsArray);
+
+      // 今週の学習日数を取得
+      const today = new Date();
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() - today.getDay()); // 日曜日を週の始まりに
+      weekStart.setHours(0, 0, 0, 0);
+
+      const weeklyDates: Array<{ date: string; completed: boolean }> = [];
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(weekStart);
+        date.setDate(weekStart.getDate() + i);
+        const dateStr = date.toISOString().split('T')[0];
+        const completed = progress?.some(p => p.date === dateStr) || false;
+        weeklyDates.push({ date: dateStr, completed });
+      }
+
+      setWeeklyProgress(weeklyDates);
 
       setStats({
         totalAnswers,
@@ -146,6 +215,81 @@ export default function StatsScreen() {
                 {stats.accuracy}%
               </Text>
             </View>
+          </Card>
+        </View>
+
+        {/* 分野別正答率 */}
+        {categoryStats.length > 0 && (
+          <View style={styles.section}>
+            <Text variant="h3" style={styles.sectionTitle}>分野別正答率</Text>
+            <Card style={styles.card}>
+              {categoryStats.map((category) => (
+                <View key={category.categoryId} style={styles.categoryItem}>
+                  <View style={styles.categoryHeader}>
+                    <Text variant="body" style={styles.categoryName}>
+                      {category.categoryName}
+                    </Text>
+                    <Text variant="body" style={[
+                      styles.categoryAccuracy,
+                      { color: category.accuracy >= 80 ? colors.correct : category.accuracy >= 60 ? colors.secondary : colors.incorrect }
+                    ]}>
+                      {category.accuracy}%
+                    </Text>
+                  </View>
+                  <View style={styles.progressBarContainer}>
+                    <View style={[
+                      styles.progressBarFill,
+                      {
+                        width: `${category.accuracy}%`,
+                        backgroundColor: category.accuracy >= 80 ? colors.correct : category.accuracy >= 60 ? colors.secondary : colors.incorrect,
+                      }
+                    ]} />
+                  </View>
+                  <Text variant="caption" color={colors.textLight} style={styles.categoryDetail}>
+                    {category.correct} / {category.total} 問正解
+                  </Text>
+                </View>
+              ))}
+            </Card>
+          </View>
+        )}
+
+        {/* 今週の学習日数 */}
+        <View style={styles.section}>
+          <Text variant="h3" style={styles.sectionTitle}>今週の学習</Text>
+          <Card style={styles.card}>
+            <View style={styles.calendarContainer}>
+              {weeklyProgress.map((day, index) => {
+                const date = new Date(day.date);
+                const dayName = ['日', '月', '火', '水', '木', '金', '土'][date.getDay()];
+                const dayNumber = date.getDate();
+                const isToday = day.date === new Date().toISOString().split('T')[0];
+                
+                return (
+                  <View key={day.date} style={styles.calendarDay}>
+                    <Text variant="caption" color={colors.textLight} style={styles.dayName}>
+                      {dayName}
+                    </Text>
+                    <View style={[
+                      styles.calendarDayCircle,
+                      day.completed && styles.calendarDayCompleted,
+                      isToday && styles.calendarDayToday,
+                    ]}>
+                      <Text variant="body" style={[
+                        styles.dayNumber,
+                        day.completed && styles.dayNumberCompleted,
+                        isToday && styles.dayNumberToday,
+                      ]}>
+                        {dayNumber}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+            <Text variant="caption" color={colors.textLight} style={styles.calendarCaption}>
+              今週は {weeklyProgress.filter(d => d.completed).length} 日学習しました
+            </Text>
           </Card>
         </View>
 
@@ -242,5 +386,81 @@ const styles = StyleSheet.create({
   messageText: {
     textAlign: 'center',
     lineHeight: 24,
+  },
+  categoryItem: {
+    marginBottom: spacing.lg,
+  },
+  categoryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  categoryName: {
+    fontWeight: '600',
+    flex: 1,
+  },
+  categoryAccuracy: {
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+  progressBarContainer: {
+    height: 8,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.full,
+    overflow: 'hidden',
+    marginBottom: spacing.xs,
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: borderRadius.full,
+  },
+  categoryDetail: {
+    fontSize: 12,
+  },
+  calendarContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: spacing.md,
+  },
+  calendarDay: {
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  dayName: {
+    fontSize: 12,
+  },
+  calendarDayCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.surface,
+    borderWidth: 2,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  calendarDayCompleted: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  calendarDayToday: {
+    borderColor: colors.secondary,
+    borderWidth: 3,
+  },
+  dayNumber: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  dayNumberCompleted: {
+    color: colors.background,
+  },
+  dayNumberToday: {
+    color: colors.secondary,
+  },
+  calendarCaption: {
+    textAlign: 'center',
+    marginTop: spacing.sm,
   },
 });

@@ -3,14 +3,26 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Button, Card, Text } from '../../components/ui';
 import { colors, spacing, borderRadius } from '../../constants/theme';
+import { useStreak } from '../../hooks/useStreak';
+import { useEffect, useState } from 'react';
 
 export default function ResultScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ correct: string; total: string }>();
+  const { currentStreak, refetch: refetchStreak } = useStreak();
+  const [previousStreak, setPreviousStreak] = useState(0);
   
   const correct = parseInt(params.correct || '0', 10);
   const total = parseInt(params.total || '0', 10);
   const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
+  const xp = correct * 10; // 正解数 × 10
+
+  useEffect(() => {
+    // ストリーク情報を更新
+    refetchStreak();
+    // 前回のストリークを保存（ストリーク継続判定用）
+    setPreviousStreak(currentStreak);
+  }, []);
 
   const getMessage = () => {
     if (percentage >= 80) return { emoji: '🎉', text: '素晴らしい！' };
@@ -20,6 +32,11 @@ export default function ResultScreen() {
   };
 
   const message = getMessage();
+  
+  // ストリーク継続のお祝いメッセージ
+  const streakMessage = currentStreak > 1 
+    ? `🔥 ${currentStreak}日連続達成中！`
+    : null;
 
   const handleGoHome = () => {
     router.replace('/(tabs)');
@@ -46,6 +63,23 @@ export default function ResultScreen() {
           <Text variant="body" color={colors.textLight} style={styles.percentage}>
             正答率 {percentage}%
           </Text>
+          
+          {/* 獲得XP */}
+          <View style={styles.xpContainer}>
+            <Text variant="h3" style={styles.xpLabel}>獲得XP</Text>
+            <View style={styles.xpValueContainer}>
+              <Text variant="h1" style={styles.xpValue}>+{xp}</Text>
+            </View>
+          </View>
+          
+          {/* ストリーク継続メッセージ */}
+          {streakMessage && (
+            <View style={styles.streakMessageContainer}>
+              <Text variant="body" style={styles.streakMessage}>
+                {streakMessage}
+              </Text>
+            </View>
+          )}
         </Card>
 
         {/* ボタン */}
@@ -109,6 +143,36 @@ const styles = StyleSheet.create({
   },
   percentage: {
     marginTop: spacing.sm,
+  },
+  xpContainer: {
+    marginTop: spacing.xl,
+    alignItems: 'center',
+  },
+  xpLabel: {
+    color: colors.textLight,
+    marginBottom: spacing.xs,
+  },
+  xpValueContainer: {
+    backgroundColor: colors.secondary + '20',
+    borderRadius: borderRadius.full,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  xpValue: {
+    color: colors.secondary,
+    fontSize: 32,
+    fontWeight: 'bold',
+  },
+  streakMessageContainer: {
+    marginTop: spacing.lg,
+    backgroundColor: colors.streak + '20',
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  streakMessage: {
+    color: colors.streak,
+    fontWeight: '600',
   },
   buttonContainer: {
     gap: spacing.md,
