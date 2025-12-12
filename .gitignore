@@ -23,3 +23,7 @@ web-build/
 
 # TypeScript
 *.tsbuildinfo
+
+# Supabase
+supabase/.branches
+supabase/.temp

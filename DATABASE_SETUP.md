@@ -1,76 +1,120 @@
 # データベースセットアップ手順
 
-## 1. Supabaseプロジェクト作成
+このプロジェクトでは Supabase CLI を使用してデータベースを管理しています。
 
-1. https://supabase.com にアクセス
-2. 「New Project」をクリック
-3. プロジェクト名を入力（例: quizapp）
-4. データベースパスワードを設定（強力なものを推奨）
-5. リージョンを選択（Japan推奨）
-6. 「Create new project」をクリック
+## 前提条件
 
-## 2. データベースURLとキーの取得
+- Supabase CLIがインストール済み
+- Supabaseプロジェクトが作成済み
 
-1. プロジェクトダッシュボードで「Settings」→「API」を開く
-2. 以下の値をコピー：
-   - **Project URL**（例: `https://xxxxx.supabase.co`）
-   - **anon public key**（例: `eyJhbGc...`）
+## 初回セットアップ
 
-## 3. 環境変数の設定
+### 1. Supabaseにログイン
 
-プロジェクトルートに `.env.local` ファイルを作成し、以下を記入：
-
-```
-EXPO_PUBLIC_SUPABASE_URL=あなたのProject URL
-EXPO_PUBLIC_SUPABASE_ANON_KEY=あなたのanon public key
+```bash
+supabase login
 ```
 
-## 4. SQLスキーマの実行
+### 2. プロジェクトをリンク
 
-1. Supabaseダッシュボードで「SQL Editor」を開く
-2. 「New query」をクリック
-3. `supabase/schema.sql` ファイルの内容を全てコピー＆ペースト
-4. 「Run」をクリックして実行
-
-## 5. 確認
-
-SQLエディタで以下を実行して、テーブルが作成されたか確認：
-
-```sql
-SELECT table_name 
-FROM information_schema.tables 
-WHERE table_schema = 'public';
+```bash
+cd quizapp
+supabase link --project-ref <your-project-ref>
 ```
 
-以下のテーブルが表示されればOK：
-- profiles
-- exams
-- categories
-- questions
-- user_answers
-- streaks
-- daily_progress
+プロジェクトrefは、Supabaseダッシュボードの「Settings」→「General」→「Reference ID」で確認できます。
 
-## 6. 認証設定（オプション）
+### 3. マイグレーションを適用
 
-より良いUXのために、メール確認をオフにすることもできます：
+```bash
+supabase db push
+```
 
-1. 「Authentication」→「Providers」→「Email」
-2. 「Confirm email」をオフ（開発中のみ推奨）
-3. 本番環境では必ずオンにしてください
+これで以下のテーブルが作成されます：
+- `profiles` - ユーザープロフィール
+- `exams` - 試験カテゴリ
+- `categories` - 分野カテゴリ  
+- `questions` - 問題
+- `user_answers` - 回答履歴
+- `streaks` - ストリーク管理
+- `daily_progress` - 日次進捗
+
+### 4. 環境変数の設定
+
+`.env.local` ファイルを作成：
+
+```bash
+EXPO_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+
+## マイグレーション管理
+
+### 新しいマイグレーションを作成
+
+```bash
+supabase migration new <migration_name>
+```
+
+### マイグレーションを適用
+
+```bash
+supabase db push
+```
+
+### マイグレーション状況を確認
+
+```bash
+supabase migration list
+```
+
+### リモートDBの差分を確認
+
+```bash
+supabase db diff
+```
+
+## ローカル開発（オプション）
+
+ローカルでSupabaseを起動することもできます：
+
+```bash
+# ローカルSupabaseを起動
+supabase start
+
+# ローカルDBにマイグレーションを適用
+supabase db reset
+
+# ローカルSupabaseを停止
+supabase stop
+```
+
+## 認証設定（開発用）
+
+開発中はメール確認をオフにすると便利です：
+
+1. Supabaseダッシュボードで「Authentication」→「Providers」→「Email」
+2. 「Confirm email」をオフ
+3. 「Save」をクリック
+
+⚠️ 本番環境では必ずオンにしてください。
 
 ## トラブルシューティング
 
 ### エラー: "relation does not exist"
-- SQLスクリプトが正しく実行されていない可能性があります
-- SQLエディタでもう一度実行してください
+
+マイグレーションが適用されていない可能性があります：
+
+```bash
+supabase db push
+```
 
 ### エラー: "permission denied"
-- RLSポリシーが正しく設定されていない可能性があります
-- `schema.sql` の最後の方のポリシー部分を確認してください
+
+RLSポリシーの問題です。マイグレーションファイルを確認してください。
 
 ### 認証エラー
+
 - `.env.local` の値が正しいか確認
 - URLの末尾にスラッシュ `/` がないか確認
-- アプリを再起動してください
-
+- アプリを再起動
