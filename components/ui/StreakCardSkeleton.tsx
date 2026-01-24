@@ -84,12 +84,13 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: colors.streak + '80',
+    backgroundColor: colors.streak + '60',
     overflow: 'hidden',
   },
   textContainer: {
-    alignItems: 'flex-start',
-    gap: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: spacing.xs,
   },
   numberSkeleton: {
     width: 60,
@@ -99,8 +100,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   labelSkeleton: {
-    width: 50,
-    height: 20,
+    width: 70,
+    height: 24,
     borderRadius: 8,
     backgroundColor: colors.streak + '80',
     overflow: 'hidden',

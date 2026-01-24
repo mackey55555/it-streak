@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, Text } from '../../components/ui';
 import { colors, spacing, borderRadius, fontSizes } from '../../constants/theme';
 import { useAuth } from '../../hooks/useAuth';
@@ -264,8 +265,11 @@ export default function SettingsScreen() {
             style={styles.menuItem}
             onPress={() => router.push('/(tabs)/stats')}
           >
-            <Text variant="body">📊 学習統計</Text>
-            <Text variant="h3" color={colors.textLight}>›</Text>
+            <View style={styles.menuTitleRow}>
+              <Ionicons name="stats-chart-outline" size={20} color={colors.primary} style={styles.menuIcon} />
+              <Text variant="body">学習統計</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
           </TouchableOpacity>
         </View>
 
@@ -371,6 +375,14 @@ const styles = StyleSheet.create({
     minHeight: 64, // タップ領域を確保
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  menuTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  menuIcon: {
+    marginRight: spacing.xs,
   },
   logoutButton: {
     marginTop: spacing.lg,

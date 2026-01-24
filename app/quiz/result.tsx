@@ -1,6 +1,7 @@
 import { View, StyleSheet, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, Text, Confetti } from '../../components/ui';
 import { colors, spacing, borderRadius } from '../../constants/theme';
 import { useStreak } from '../../hooks/useStreak';
@@ -70,17 +71,17 @@ export default function ResultScreen() {
   }, []);
 
   const getMessage = () => {
-    if (percentage >= 80) return { emoji: '🎉', text: '素晴らしい！' };
-    if (percentage >= 60) return { emoji: '👍', text: 'いい調子！' };
-    if (percentage >= 40) return { emoji: '💪', text: 'もう少し！' };
-    return { emoji: '📚', text: '復習しよう！' };
+    if (percentage >= 80) return { icon: 'trophy', text: '素晴らしい！', color: colors.secondary };
+    if (percentage >= 60) return { icon: 'thumbs-up', text: 'いい調子！', color: colors.primary };
+    if (percentage >= 40) return { icon: 'fitness', text: 'もう少し！', color: colors.streak };
+    return { icon: 'book', text: '復習しよう！', color: colors.textLight };
   };
 
   const message = getMessage();
   
   // ストリーク継続のお祝いメッセージ
   const streakMessage = currentStreak > 1 
-    ? `🔥 ${currentStreak}日連続達成中！`
+    ? `${currentStreak}日連続達成中！`
     : null;
 
   const handleGoHome = () => {
@@ -107,8 +108,10 @@ export default function ResultScreen() {
           ]}
         >
           <Card style={styles.resultCard}>
-          <Text variant="h1" style={styles.emoji}>{message.emoji}</Text>
-          <Text variant="h2" style={styles.message}>{message.text}</Text>
+          <View style={styles.iconContainer}>
+            <Ionicons name={message.icon as any} size={64} color={message.color} />
+          </View>
+          <Text variant="h2" style={[styles.message, { color: message.color }]}>{message.text}</Text>
           
           <Animated.View
             style={[
@@ -138,6 +141,7 @@ export default function ResultScreen() {
           {/* ストリーク継続メッセージ */}
           {streakMessage && (
             <View style={styles.streakMessageContainer}>
+              <Ionicons name="flame" size={20} color={colors.streak} style={styles.streakIcon} />
               <Text variant="body" style={styles.streakMessage}>
                 {streakMessage}
               </Text>
@@ -193,7 +197,6 @@ const styles = StyleSheet.create({
   },
   message: {
     marginBottom: spacing.xl,
-    color: colors.primary,
   },
   scoreContainer: {
     flexDirection: 'row',
@@ -246,6 +249,12 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  streakIcon: {
+    marginRight: spacing.xs,
   },
   streakMessage: {
     color: colors.streak,

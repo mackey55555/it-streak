@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { Card, Text } from '../../components/ui';
 import { colors, spacing, borderRadius } from '../../constants/theme';
 import { useStreak } from '../../hooks/useStreak';
@@ -301,16 +302,37 @@ export default function StatsScreen() {
 
         {/* 励ましメッセージ */}
         <Card style={styles.messageCard}>
-          <Text variant="body" style={styles.messageText}>
-            {stats.totalAnswers === 0 
-              ? '🎓 学習を始めて統計を記録しましょう！'
-              : stats.accuracy >= 80 
-              ? '🎉 素晴らしい成績です！この調子で頑張りましょう！'
-              : stats.accuracy >= 60
-              ? '👍 順調に学習できています！'
-              : '💪 コツコツ続けることが大切です！頑張りましょう！'
-            }
-          </Text>
+          <View style={styles.messageContent}>
+            {stats.totalAnswers === 0 ? (
+              <>
+                <Ionicons name="school-outline" size={24} color={colors.primary} style={styles.messageIcon} />
+                <Text variant="body" style={styles.messageText}>
+                  学習を始めて統計を記録しましょう！
+                </Text>
+              </>
+            ) : stats.accuracy >= 80 ? (
+              <>
+                <Ionicons name="trophy" size={24} color={colors.secondary} style={styles.messageIcon} />
+                <Text variant="body" style={styles.messageText}>
+                  素晴らしい成績です！この調子で頑張りましょう！
+                </Text>
+              </>
+            ) : stats.accuracy >= 60 ? (
+              <>
+                <Ionicons name="thumbs-up" size={24} color={colors.primary} style={styles.messageIcon} />
+                <Text variant="body" style={styles.messageText}>
+                  順調に学習できています！
+                </Text>
+              </>
+            ) : (
+              <>
+                <Ionicons name="fitness" size={24} color={colors.streak} style={styles.messageIcon} />
+                <Text variant="body" style={styles.messageText}>
+                  コツコツ続けることが大切です！頑張りましょう！
+                </Text>
+              </>
+            )}
+          </View>
         </Card>
       </ScrollView>
     </SafeAreaView>
@@ -394,9 +416,19 @@ const styles = StyleSheet.create({
     borderColor: colors.primary + '20',
     borderRadius: borderRadius.lg,
   },
+  messageContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  messageIcon: {
+    marginRight: spacing.xs,
+  },
   messageText: {
     textAlign: 'center',
     lineHeight: 24,
+    flex: 1,
   },
   categoryItem: {
     marginBottom: spacing.xl,

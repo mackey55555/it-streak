@@ -1,6 +1,7 @@
 import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, ProgressBar, Text, StreakCardSkeleton, ProgressCardSkeleton } from '../../components/ui';
 import { colors, spacing, borderRadius } from '../../constants/theme';
 import { useStreak } from '../../hooks/useStreak';
@@ -104,11 +105,11 @@ export default function HomeScreen() {
                     transform: [{ scale: streakPulse }],
                   }}
                 >
-                  <Text variant="h1" style={styles.streakEmoji}>🔥</Text>
+                  <Ionicons name="flame" size={48} color={colors.background} />
                 </Animated.View>
                 <View style={styles.streakTextContainer}>
                   <Text variant="h2" style={styles.streakNumber}>{currentStreak}</Text>
-                  <Text variant="body" color={colors.textLight}>日連続！</Text>
+                  <Text variant="h3" style={styles.streakLabel}>日連続！</Text>
                 </View>
               </View>
             </Card>
@@ -134,9 +135,12 @@ export default function HomeScreen() {
               style={styles.progressBar}
             />
             {isGoalCompleted ? (
-              <Text variant="caption" style={styles.progressCaption}>
-                🎉 今日の目標達成！素晴らしい！
-              </Text>
+              <View style={styles.progressCaptionRow}>
+                <Ionicons name="checkmark-circle" size={16} color={colors.primary} style={styles.captionIcon} />
+                <Text variant="caption" style={styles.progressCaption}>
+                  今日の目標達成！素晴らしい！
+                </Text>
+              </View>
             ) : (
               <Text variant="caption" style={styles.progressCaption}>
                 あと{remaining}問で今日の目標達成！
@@ -156,32 +160,41 @@ export default function HomeScreen() {
         <View style={styles.menuSection}>
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuContent}>
-              <Text variant="h3">📚 分野別に学習</Text>
+              <View style={styles.menuTitleRow}>
+                <Ionicons name="library-outline" size={20} color={colors.primary} style={styles.menuIcon} />
+                <Text variant="h3">分野別に学習</Text>
+              </View>
               <Text variant="caption" style={styles.menuDescription}>
                 苦手な分野を集中的に
               </Text>
             </View>
-            <Text variant="h3" color={colors.textLight}>›</Text>
+            <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuContent}>
-              <Text variant="h3">🔄 苦手な問題を復習</Text>
+              <View style={styles.menuTitleRow}>
+                <Ionicons name="refresh-outline" size={20} color={colors.primary} style={styles.menuIcon} />
+                <Text variant="h3">苦手な問題を復習</Text>
+              </View>
               <Text variant="caption" style={styles.menuDescription}>
                 間違えた問題をもう一度
               </Text>
             </View>
-            <Text variant="h3" color={colors.textLight}>›</Text>
+            <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuContent}>
-              <Text variant="h3">⭐ ランダムチャレンジ</Text>
+              <View style={styles.menuTitleRow}>
+                <Ionicons name="shuffle-outline" size={20} color={colors.primary} style={styles.menuIcon} />
+                <Text variant="h3">ランダムチャレンジ</Text>
+              </View>
               <Text variant="caption" style={styles.menuDescription}>
                 全分野からランダムに出題
               </Text>
             </View>
-            <Text variant="h3" color={colors.textLight}>›</Text>
+            <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -220,13 +233,21 @@ const styles = StyleSheet.create({
     marginRight: spacing.lg,
   },
   streakTextContainer: {
-    alignItems: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: spacing.xs,
   },
   streakNumber: {
     color: colors.background,
     fontSize: 40,
     lineHeight: 44,
     fontWeight: 'bold',
+  },
+  streakLabel: {
+    color: colors.background,
+    fontSize: 20,
+    fontWeight: '600',
+    opacity: 0.95,
   },
   progressCard: {
     marginBottom: spacing.xl,
@@ -253,8 +274,19 @@ const styles = StyleSheet.create({
     marginVertical: spacing.md,
     height: 16,
   },
+  progressCaptionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.sm,
+    gap: spacing.xs,
+  },
+  captionIcon: {
+    marginRight: spacing.xs,
+  },
   progressCaption: {
-    marginTop: spacing.xs,
+    textAlign: 'center',
+    fontWeight: '600',
   },
   startButton: {
     marginBottom: spacing.xl,
@@ -277,6 +309,14 @@ const styles = StyleSheet.create({
   menuContent: {
     flex: 1,
     gap: spacing.xs,
+  },
+  menuTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  menuIcon: {
+    marginRight: spacing.xs,
   },
   menuDescription: {
     marginTop: spacing.xs,

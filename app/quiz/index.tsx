@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, ProgressBar, Text, ErrorView, Skeleton } from '../../components/ui';
 import { Confetti } from '../../components/ui/Confetti';
 import { colors, spacing, borderRadius } from '../../constants/theme';
@@ -189,7 +190,7 @@ export default function QuizScreen() {
       {/* ヘッダー */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-          <Text variant="h2" color={colors.textLight}>✕</Text>
+          <Ionicons name="close" size={24} color={colors.textLight} />
         </TouchableOpacity>
         <View style={styles.progressContainer}>
           <ProgressBar progress={progress} height={8} />

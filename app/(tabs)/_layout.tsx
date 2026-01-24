@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../constants/theme';
 
 export default function TabLayout() {
@@ -28,7 +28,7 @@ export default function TabLayout() {
         options={{
           title: 'ホーム',
           tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size }}>🏠</Text>
+            <Ionicons name="home-outline" size={size} color={color} />
           ),
         }}
       />
@@ -37,7 +37,7 @@ export default function TabLayout() {
         options={{
           title: '統計',
           tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size }}>📊</Text>
+            <Ionicons name="stats-chart-outline" size={size} color={color} />
           ),
         }}
       />
@@ -46,7 +46,7 @@ export default function TabLayout() {
         options={{
           title: '設定',
           tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size }}>⚙️</Text>
+            <Ionicons name="settings-outline" size={size} color={color} />
           ),
         }}
       />
