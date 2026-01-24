@@ -1,0 +1,21 @@
+name: Send Daily Reminder
+
+on:
+  schedule:
+    # 毎時0分に実行（UTC時間）
+    # 日本時間の19:00に送信したい場合: 10:00 UTC (JST = UTC+9)
+    # 例: '0 10 * * *' で毎日UTC 10:00（日本時間19:00）に実行
+    - cron: '0 * * * *'  # 毎時0分（推奨：ユーザーの設定時刻に合わせて送信）
+  workflow_dispatch: # 手動実行も可能
+
+jobs:
+  send-reminder:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call Supabase Edge Function
+        run: |
+          curl -X POST \
+            "${{ secrets.SUPABASE_URL }}/functions/v1/send-daily-reminder" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{}'

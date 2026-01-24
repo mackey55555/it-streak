@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Database } from '../types/database';
+import { useAuth } from './useAuth';
 
 type DailyProgress = Database['public']['Tables']['daily_progress']['Row'];
 
 export const useDailyProgress = () => {
+  const { user, loading: authLoading } = useAuth();
   const [progress, setProgress] = useState<DailyProgress | null>(null);
   const [dailyGoal, setDailyGoal] = useState(5);
   const [loading, setLoading] = useState(false);
@@ -116,8 +118,11 @@ export const useDailyProgress = () => {
     : 0;
 
   useEffect(() => {
-    fetchTodayProgress();
-  }, []);
+    // 認証が完了し、ユーザーが存在する場合のみデータを取得
+    if (!authLoading && user) {
+      fetchTodayProgress();
+    }
+  }, [user, authLoading]);
 
   return {
     todayProgress: {

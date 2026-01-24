@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import * as Clipboard from 'expo-clipboard';
 import { Button, Card, Text } from '../../components/ui';
 import { colors, spacing, borderRadius, fontSizes } from '../../constants/theme';
 import { useAuth } from '../../hooks/useAuth';
@@ -11,7 +12,7 @@ import { supabase } from '../../lib/supabase';
 export default function SettingsScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
-  const { registerForPushNotifications } = usePushNotifications();
+  const { expoPushToken, registerForPushNotifications, error: pushError } = usePushNotifications();
   const [dailyGoal, setDailyGoal] = useState('5');
   const [notificationEnabled, setNotificationEnabled] = useState(true);
   const [notificationTime, setNotificationTime] = useState('19:00');
@@ -127,6 +128,29 @@ export default function SettingsScreen() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleCopyToken = async () => {
+    if (expoPushToken) {
+      await Clipboard.setStringAsync(expoPushToken);
+      Alert.alert('コピーしました', 'プッシュ通知トークンをクリップボードにコピーしました');
+    }
+  };
+
+  const handleTestNotification = () => {
+    if (!expoPushToken) {
+      Alert.alert('エラー', 'プッシュ通知トークンが取得できていません。通知を有効にしてください。');
+      return;
+    }
+
+    Alert.alert(
+      'テスト通知の送信',
+      `以下のコマンドをターミナルで実行してテスト通知を送信できます：\n\ncurl -H "Content-Type: application/json" -X POST https://exp.host/--/api/v2/push/send -d '{"to":"${expoPushToken}","title":"テスト通知","body":"これはテスト通知です"}'`,
+      [
+        { text: 'トークンをコピー', onPress: handleCopyToken },
+        { text: 'OK', style: 'default' },
+      ]
+    );
   };
 
   const handleSignOut = async () => {
@@ -251,6 +275,51 @@ export default function SettingsScreen() {
                       variant="ghost"
                     />
                   </View>
+                </View>
+
+                {/* プッシュ通知トークン表示（開発用） */}
+                <View style={styles.divider} />
+                <View style={styles.tokenContainer}>
+                  <View style={styles.tokenInfo}>
+                    <Text variant="body" style={styles.tokenLabel}>プッシュ通知トークン</Text>
+                    <Text variant="caption" color={colors.textLight}>
+                      テスト通知を送信するために使用します
+                    </Text>
+                  </View>
+                  {expoPushToken ? (
+                    <>
+                      <TouchableOpacity 
+                        style={styles.tokenBox}
+                        onPress={handleCopyToken}
+                      >
+                        <Text 
+                          variant="caption" 
+                          style={styles.tokenText}
+                          numberOfLines={2}
+                        >
+                          {expoPushToken}
+                        </Text>
+                      </TouchableOpacity>
+                      <Button
+                        title="テスト通知を送信"
+                        onPress={handleTestNotification}
+                        variant="ghost"
+                        style={styles.testButton}
+                      />
+                    </>
+                  ) : (
+                    <View style={styles.tokenStatus}>
+                      <Text variant="caption" color={colors.textLight}>
+                        {pushError ? `エラー: ${pushError}` : 'トークンを取得中...'}
+                      </Text>
+                      <Button
+                        title="再試行"
+                        onPress={registerForPushNotifications}
+                        variant="ghost"
+                        style={styles.retryButton}
+                      />
+                    </View>
+                  )}
                 </View>
               </>
             )}
@@ -416,5 +485,38 @@ const styles = StyleSheet.create({
   },
   timeSaveButton: {
     flex: 1,
+  },
+  tokenContainer: {
+    gap: spacing.md,
+  },
+  tokenInfo: {
+    marginBottom: spacing.xs,
+  },
+  tokenLabel: {
+    fontWeight: '600',
+    marginBottom: spacing.xs,
+  },
+  tokenBox: {
+    backgroundColor: colors.surface,
+    borderWidth: 2,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  tokenText: {
+    fontFamily: 'monospace',
+    fontSize: fontSizes.xs,
+    color: colors.text,
+  },
+  tokenStatus: {
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+  },
+  testButton: {
+    width: '100%',
+  },
+  retryButton: {
+    marginTop: spacing.sm,
   },
 });

@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Database } from '../types/database';
+import { useAuth } from './useAuth';
 
 type Streak = Database['public']['Tables']['streaks']['Row'];
 
 export const useStreak = () => {
+  const { user, loading: authLoading } = useAuth();
   const [streak, setStreak] = useState<Streak | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -124,8 +126,11 @@ export const useStreak = () => {
   };
 
   useEffect(() => {
-    fetchStreak();
-  }, []);
+    // 認証が完了し、ユーザーが存在する場合のみデータを取得
+    if (!authLoading && user) {
+      fetchStreak();
+    }
+  }, [user, authLoading]);
 
   return {
     currentStreak: streak?.current_streak ?? 0,
