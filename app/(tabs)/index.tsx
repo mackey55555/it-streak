@@ -6,6 +6,8 @@ import { Button, Card, ProgressBar, Text, StreakCardSkeleton, ProgressCardSkelet
 import { colors, spacing, borderRadius } from '../../constants/theme';
 import { useStreak } from '../../hooks/useStreak';
 import { useDailyProgress } from '../../hooks/useDailyProgress';
+import { useAuth } from '../../hooks/useAuth';
+import { supabase } from '../../lib/supabase';
 import { useState, useEffect, useRef } from 'react';
 
 export default function HomeScreen() {
@@ -20,8 +22,11 @@ export default function HomeScreen() {
     refetch: refetchProgress 
   } = useDailyProgress();
 
+  const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [previousStreak, setPreviousStreak] = useState(0);
+  const [weeklyProgress, setWeeklyProgress] = useState<Array<{ date: string; completed: boolean }>>([]);
+  const [weeklyLoading, setWeeklyLoading] = useState(false);
   const streakScale = useRef(new Animated.Value(1)).current;
   const streakPulse = useRef(new Animated.Value(1)).current;
 
@@ -61,9 +66,71 @@ export default function HomeScreen() {
     setPreviousStreak(currentStreak);
   }, [currentStreak]);
 
+  // 今週の学習データを取得
+  const fetchWeeklyProgress = async () => {
+    if (!user) return;
+    
+    setWeeklyLoading(true);
+    try {
+      // 今週の進捗データを取得
+      const today = new Date();
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() - today.getDay()); // 日曜日を週の始まりに
+      weekStart.setHours(0, 0, 0, 0);
+
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      weekEnd.setHours(23, 59, 59, 999);
+
+      // 日付をYYYY-MM-DD形式の文字列に変換（ローカル時間を使用）
+      const formatDate = (date: Date): string => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
+      const weekStartStr = formatDate(weekStart);
+      const weekEndStr = formatDate(weekEnd);
+
+      const { data: progress, error } = await supabase
+        .from('daily_progress')
+        .select('date')
+        .eq('user_id', user.id)
+        .gte('date', weekStartStr)
+        .lte('date', weekEndStr);
+
+      if (error) throw error;
+
+      const weeklyDates: Array<{ date: string; completed: boolean }> = [];
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(weekStart);
+        date.setDate(weekStart.getDate() + i);
+        const dateStr = formatDate(date);
+        const completed = progress?.some(p => {
+          const progressDate = typeof p.date === 'string' ? p.date : formatDate(new Date(p.date));
+          return progressDate === dateStr;
+        }) || false;
+        weeklyDates.push({ date: dateStr, completed });
+      }
+
+      setWeeklyProgress(weeklyDates);
+    } catch (error) {
+      console.error('Error fetching weekly progress:', error);
+    } finally {
+      setWeeklyLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchWeeklyProgress();
+    }
+  }, [user]);
+
   const handleRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([refetchStreak(), refetchProgress()]);
+    await Promise.all([refetchStreak(), refetchProgress(), fetchWeeklyProgress()]);
     setRefreshing(false);
   };
 
@@ -148,6 +215,61 @@ export default function HomeScreen() {
             )}
           </Card>
         )}
+
+        {/* 今週の学習カード（コンパクト版） */}
+        <TouchableOpacity 
+          onPress={() => router.push('/(tabs)/stats')}
+          activeOpacity={0.7}
+        >
+          <Card style={styles.weeklyCard}>
+            <View style={styles.weeklyHeader}>
+              <Text variant="h3" style={styles.weeklyTitle}>今週の学習</Text>
+              <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
+            </View>
+            <View style={styles.calendarContainer}>
+              {weeklyLoading ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                weeklyProgress.map((day) => {
+                  const [year, month, dayNum] = day.date.split('-').map(Number);
+                  const date = new Date(year, month - 1, dayNum);
+                  const dayName = ['日', '月', '火', '水', '木', '金', '土'][date.getDay()];
+                  const dayNumber = date.getDate();
+                  
+                  const today = new Date();
+                  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                  const isToday = day.date === todayStr;
+                  
+                  return (
+                    <View key={day.date} style={styles.calendarDay}>
+                      <Text variant="caption" color={colors.textLight} style={styles.dayName}>
+                        {dayName}
+                      </Text>
+                      <View style={[
+                        styles.calendarDayCircle,
+                        day.completed && styles.calendarDayCompleted,
+                        isToday && styles.calendarDayToday,
+                      ]}>
+                        <Text variant="caption" style={[
+                          styles.dayNumber,
+                          day.completed && styles.dayNumberCompleted,
+                          isToday && !day.completed && styles.dayNumberToday,
+                        ]}>
+                          {dayNumber}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })
+              )}
+            </View>
+            {!weeklyLoading && (
+              <Text variant="caption" color={colors.textLight} style={styles.weeklyCaption}>
+                今週は {weeklyProgress.filter(d => d.completed).length} 日学習しました
+              </Text>
+            )}
+          </Card>
+        </TouchableOpacity>
 
         {/* 学習開始ボタン */}
         <Button
@@ -321,6 +443,67 @@ const styles = StyleSheet.create({
   menuDescription: {
     marginTop: spacing.xs,
     color: colors.textLight,
+  },
+  weeklyCard: {
+    marginBottom: spacing.xl,
+    padding: spacing.lg,
+  },
+  weeklyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  weeklyTitle: {
+    fontWeight: '600',
+  },
+  calendarContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  calendarDay: {
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  dayName: {
+    fontSize: 11,
+  },
+  calendarDayCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.surface,
+    borderWidth: 2,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  calendarDayCompleted: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  calendarDayToday: {
+    borderColor: colors.secondary,
+    borderWidth: 2,
+  },
+  dayNumber: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  dayNumberCompleted: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  dayNumberToday: {
+    color: colors.secondary,
+  },
+  weeklyCaption: {
+    textAlign: 'center',
+    marginTop: spacing.xs,
+    fontSize: 12,
   },
 });
 

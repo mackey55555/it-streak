@@ -117,12 +117,25 @@ export default function StatsScreen() {
       weekStart.setDate(today.getDate() - today.getDay()); // 日曜日を週の始まりに
       weekStart.setHours(0, 0, 0, 0);
 
+      // 日付をYYYY-MM-DD形式の文字列に変換（ローカル時間を使用）
+      const formatDate = (date: Date): string => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
       const weeklyDates: Array<{ date: string; completed: boolean }> = [];
       for (let i = 0; i < 7; i++) {
         const date = new Date(weekStart);
         date.setDate(weekStart.getDate() + i);
-        const dateStr = date.toISOString().split('T')[0];
-        const completed = progress?.some(p => p.date === dateStr) || false;
+        const dateStr = formatDate(date);
+        // progressデータから該当する日付を検索
+        const completed = progress?.some(p => {
+          // p.dateが文字列の場合とDateオブジェクトの場合の両方に対応
+          const progressDate = typeof p.date === 'string' ? p.date : formatDate(new Date(p.date));
+          return progressDate === dateStr;
+        }) || false;
         weeklyDates.push({ date: dateStr, completed });
       }
 
@@ -267,10 +280,16 @@ export default function StatsScreen() {
           <Card style={styles.card}>
             <View style={styles.calendarContainer}>
               {weeklyProgress.map((day, index) => {
-                const date = new Date(day.date);
+                // 日付文字列（YYYY-MM-DD）をパース
+                const [year, month, dayNum] = day.date.split('-').map(Number);
+                const date = new Date(year, month - 1, dayNum);
                 const dayName = ['日', '月', '火', '水', '木', '金', '土'][date.getDay()];
                 const dayNumber = date.getDate();
-                const isToday = day.date === new Date().toISOString().split('T')[0];
+                
+                // 今日の日付をローカル時間で取得
+                const today = new Date();
+                const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                const isToday = day.date === todayStr;
                 
                 return (
                   <View key={day.date} style={styles.calendarDay}>
@@ -285,7 +304,7 @@ export default function StatsScreen() {
                       <Text variant="body" style={[
                         styles.dayNumber,
                         day.completed && styles.dayNumberCompleted,
-                        isToday && styles.dayNumberToday,
+                        isToday && !day.completed && styles.dayNumberToday, // completedの場合は白を優先
                       ]}>
                         {dayNumber}
                       </Text>
@@ -501,7 +520,8 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   dayNumberCompleted: {
-    color: colors.background,
+    color: '#FFFFFF', // より濃い白で可視性を向上
+    fontWeight: 'bold', // 太字でより見やすく
   },
   dayNumberToday: {
     color: colors.secondary,

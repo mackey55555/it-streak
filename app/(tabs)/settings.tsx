@@ -20,8 +20,10 @@ export default function SettingsScreen() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetchProfile();
-  }, []);
+    if (user) {
+      fetchProfile();
+    }
+  }, [user]);
 
   const fetchProfile = async () => {
     if (!user) return;
@@ -34,9 +36,16 @@ export default function SettingsScreen() {
         .eq('id', user.id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return;
+      }
+      
       if (data) {
-        setDailyGoal(data.daily_goal.toString());
+        // daily_goalがnullの場合はデフォルト値を使用
+        if (data.daily_goal !== null && data.daily_goal !== undefined) {
+          setDailyGoal(data.daily_goal.toString());
+        }
         setNotificationEnabled(data.notification_enabled ?? true);
         if (data.notification_time) {
           // TIME型は "HH:MM:SS" 形式なので "HH:MM" に変換
