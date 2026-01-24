@@ -8,4 +8,6 @@ export { Skeleton } from './Skeleton';
 export { SkeletonCard } from './SkeletonCard';
 export { StreakCardSkeleton } from './StreakCardSkeleton';
 export { ProgressCardSkeleton } from './ProgressCardSkeleton';
+export { LineChart } from './LineChart';
+export { MonthlyCalendar } from './MonthlyCalendar';
 

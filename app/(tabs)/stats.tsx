@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { Card, Text } from '../../components/ui';
+import { Card, Text, LineChart, MonthlyCalendar } from '../../components/ui';
 import { colors, spacing, borderRadius } from '../../constants/theme';
 import { useStreak } from '../../hooks/useStreak';
 import { supabase } from '../../lib/supabase';
@@ -27,6 +27,16 @@ export default function StatsScreen() {
   const [weeklyProgress, setWeeklyProgress] = useState<Array<{
     date: string;
     completed: boolean;
+  }>>([]);
+  const [dailyStats, setDailyStats] = useState<Array<{
+    date: string;
+    answerCount: number;
+    accuracy: number;
+  }>>([]);
+  const [monthlyCalendar, setMonthlyCalendar] = useState<Array<{
+    date: string;
+    completed: boolean;
+    answerCount: number;
   }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -141,6 +151,69 @@ export default function StatsScreen() {
 
       setWeeklyProgress(weeklyDates);
 
+      // 過去30日間の日ごとの統計を取得
+      const thirtyDaysAgo = new Date(today);
+      thirtyDaysAgo.setDate(today.getDate() - 29); // 30日間（今日含む）
+      thirtyDaysAgo.setHours(0, 0, 0, 0);
+
+      // 過去30日間の回答データを取得
+      const { data: recentAnswers, error: recentAnswersError } = await supabase
+        .from('user_answers')
+        .select('is_correct, answered_at')
+        .eq('user_id', user.id)
+        .gte('answered_at', thirtyDaysAgo.toISOString())
+        .order('answered_at', { ascending: true });
+
+      if (recentAnswersError) throw recentAnswersError;
+
+      // 日ごとに集計
+      const dailyStatsMap = new Map<string, { total: number; correct: number }>();
+      
+      recentAnswers?.forEach((answer: any) => {
+        const answerDate = new Date(answer.answered_at);
+        const dateStr = formatDate(answerDate);
+        const current = dailyStatsMap.get(dateStr) || { total: 0, correct: 0 };
+        current.total++;
+        if (answer.is_correct) current.correct++;
+        dailyStatsMap.set(dateStr, current);
+      });
+
+      // 過去30日間の日付リストを作成
+      const dailyStatsArray: Array<{ date: string; answerCount: number; accuracy: number }> = [];
+      for (let i = 29; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+        date.setHours(0, 0, 0, 0);
+        const dateStr = formatDate(date);
+        const stats = dailyStatsMap.get(dateStr) || { total: 0, correct: 0 };
+        const accuracy = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
+        dailyStatsArray.push({
+          date: dateStr,
+          answerCount: stats.total,
+          accuracy,
+        });
+      }
+
+      setDailyStats(dailyStatsArray);
+
+      // 月間カレンダー用データ（過去30日間）
+      const monthlyCalendarArray: Array<{ date: string; completed: boolean; answerCount: number }> = [];
+      for (let i = 29; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+        date.setHours(0, 0, 0, 0);
+        const dateStr = formatDate(date);
+        const stats = dailyStatsMap.get(dateStr) || { total: 0, correct: 0 };
+        const completed = stats.total > 0;
+        monthlyCalendarArray.push({
+          date: dateStr,
+          completed,
+          answerCount: stats.total,
+        });
+      }
+
+      setMonthlyCalendar(monthlyCalendarArray);
+
       setStats({
         totalAnswers,
         correctAnswers,
@@ -231,6 +304,45 @@ export default function StatsScreen() {
             </View>
           </Card>
         </View>
+
+        {/* 学習量の推移グラフ */}
+        {dailyStats.length > 0 && (
+          <View style={styles.section}>
+            <Card style={styles.card}>
+              <LineChart
+                data={dailyStats.map(d => ({ date: d.date, value: d.answerCount }))}
+                title="学習量の推移（過去30日間）"
+                yAxisLabel="問"
+                color={colors.primary}
+                showArea={true}
+              />
+            </Card>
+          </View>
+        )}
+
+        {/* 正答率の推移グラフ */}
+        {dailyStats.length > 0 && (
+          <View style={styles.section}>
+            <Card style={styles.card}>
+              <LineChart
+                data={dailyStats.map(d => ({ date: d.date, value: d.accuracy }))}
+                title="正答率の推移（過去30日間）"
+                yAxisLabel="%"
+                color={colors.secondary}
+                showArea={false}
+              />
+            </Card>
+          </View>
+        )}
+
+        {/* 月間学習カレンダー */}
+        {monthlyCalendar.length > 0 && (
+          <View style={styles.section}>
+            <Card style={styles.card}>
+              <MonthlyCalendar data={monthlyCalendar} />
+            </Card>
+          </View>
+        )}
 
         {/* 分野別正答率 */}
         {categoryStats.length > 0 && (
