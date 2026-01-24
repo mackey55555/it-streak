@@ -18,6 +18,7 @@ export interface Database {
           notification_enabled: boolean
           notification_time: string
           push_token: string | null
+          selected_exam_id: string | null
           created_at: string
           updated_at: string
         }
@@ -29,6 +30,7 @@ export interface Database {
           notification_enabled?: boolean
           notification_time?: string
           push_token?: string | null
+          selected_exam_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -40,6 +42,7 @@ export interface Database {
           notification_enabled?: boolean
           notification_time?: string
           push_token?: string | null
+          selected_exam_id?: string | null
           created_at?: string
           updated_at?: string
         }

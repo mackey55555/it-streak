@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Switch } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Switch, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,13 @@ import { useAuth } from '../../hooks/useAuth';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
 import { supabase } from '../../lib/supabase';
 
+interface Exam {
+  id: string;
+  name: string;
+  description: string | null;
+  questionCount: number;
+}
+
 export default function SettingsScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
@@ -16,6 +23,10 @@ export default function SettingsScreen() {
   const [dailyGoal, setDailyGoal] = useState('5');
   const [notificationEnabled, setNotificationEnabled] = useState(true);
   const [notificationTime, setNotificationTime] = useState('19:00');
+  const [selectedExamId, setSelectedExamId] = useState<string | null>(null);
+  const [selectedExamName, setSelectedExamName] = useState<string>('');
+  const [exams, setExams] = useState<Exam[]>([]);
+  const [showExamModal, setShowExamModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -25,6 +36,59 @@ export default function SettingsScreen() {
     }
   }, [user]);
 
+  useEffect(() => {
+    if (user) {
+      fetchProfile();
+      fetchExams();
+    }
+  }, [user]);
+
+  const fetchExams = async () => {
+    try {
+      const { data: examsData, error } = await supabase
+        .from('exams')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+
+      if (examsData) {
+        // 各試験の問題数を取得
+        const examsWithCounts = await Promise.all(
+          examsData.map(async (exam) => {
+            // 試験のカテゴリを取得
+            const { data: categories } = await supabase
+              .from('categories')
+              .select('id')
+              .eq('exam_id', exam.id);
+
+            const categoryIds = categories?.map(c => c.id) || [];
+
+            // 問題数を取得
+            let questionCount = 0;
+            if (categoryIds.length > 0) {
+              const { count } = await supabase
+                .from('questions')
+                .select('*', { count: 'exact', head: true })
+                .in('category_id', categoryIds);
+
+              questionCount = count || 0;
+            }
+
+            return {
+              ...exam,
+              questionCount,
+            };
+          })
+        );
+
+        setExams(examsWithCounts);
+      }
+    } catch (err: any) {
+      console.error('Error fetching exams:', err);
+    }
+  };
+
   const fetchProfile = async () => {
     if (!user) return;
     
@@ -32,7 +96,7 @@ export default function SettingsScreen() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('daily_goal, notification_enabled, notification_time')
+        .select('daily_goal, notification_enabled, notification_time, selected_exam_id')
         .eq('id', user.id)
         .single();
 
@@ -51,12 +115,64 @@ export default function SettingsScreen() {
           // TIME型は "HH:MM:SS" 形式なので "HH:MM" に変換
           setNotificationTime(data.notification_time.substring(0, 5));
         }
+        if (data.selected_exam_id) {
+          setSelectedExamId(data.selected_exam_id);
+          // 試験名を取得
+          const { data: examData } = await supabase
+            .from('exams')
+            .select('name')
+            .eq('id', data.selected_exam_id)
+            .single();
+          if (examData) {
+            setSelectedExamName(examData.name);
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleExamChange = async (examId: string) => {
+    if (!user) return;
+
+    const selectedExam = exams.find(e => e.id === examId);
+    if (!selectedExam) return;
+
+    // 問題数が0の試験は選択できない
+    if (selectedExam.questionCount === 0) {
+      return;
+    }
+
+    Alert.alert(
+      '試験を切り替えますか？',
+      `${selectedExam.name}に切り替えます。統計データは試験別に管理されます。`,
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        {
+          text: '切り替える',
+          onPress: async () => {
+            try {
+              const { error } = await supabase
+                .from('profiles')
+                .update({ selected_exam_id: examId })
+                .eq('id', user.id);
+
+              if (error) throw error;
+
+              setSelectedExamId(examId);
+              setSelectedExamName(selectedExam.name);
+              setShowExamModal(false);
+              Alert.alert('成功', '試験を切り替えました');
+            } catch (error: any) {
+              Alert.alert('エラー', error.message);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleSaveDailyGoal = async () => {
@@ -214,6 +330,31 @@ export default function SettingsScreen() {
           </Card>
         </View>
 
+        {/* 試験選択 */}
+        <View style={styles.section}>
+          <Text variant="h3" style={styles.sectionTitle}>学習する試験</Text>
+          <Card style={styles.card}>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => setShowExamModal(true)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.menuContent}>
+                <View style={styles.menuTitleRow}>
+                  <Ionicons name="school-outline" size={20} color={colors.primary} style={styles.menuIcon} />
+                  <View style={styles.menuTextContainer}>
+                    <Text variant="h3">現在の試験</Text>
+                    <Text variant="body" color={colors.textLight} style={styles.menuDescription}>
+                      {selectedExamName || '未選択'}
+                    </Text>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
+              </View>
+            </TouchableOpacity>
+          </Card>
+        </View>
+
         {/* 通知設定 */}
         <View style={styles.section}>
           <Text variant="h3" style={styles.sectionTitle}>通知設定</Text>
@@ -267,6 +408,31 @@ export default function SettingsScreen() {
           </Card>
         </View>
 
+        {/* 試験選択 */}
+        <View style={styles.section}>
+          <Text variant="h3" style={styles.sectionTitle}>学習する試験</Text>
+          <Card style={styles.card}>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => setShowExamModal(true)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.menuContent}>
+                <View style={styles.menuTitleRow}>
+                  <Ionicons name="school-outline" size={20} color={colors.primary} style={styles.menuIcon} />
+                  <View style={styles.menuTextContainer}>
+                    <Text variant="body">現在の試験</Text>
+                    <Text variant="caption" color={colors.textLight} style={styles.menuDescription}>
+                      {selectedExamName || '未選択'}
+                    </Text>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
+              </View>
+            </TouchableOpacity>
+          </Card>
+        </View>
+
         {/* 統計 */}
         <View style={styles.section}>
           <Text variant="h3" style={styles.sectionTitle}>その他</Text>
@@ -295,6 +461,89 @@ export default function SettingsScreen() {
           Version 1.0.0
         </Text>
       </ScrollView>
+
+      {/* 試験選択モーダル */}
+      <Modal
+        visible={showExamModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowExamModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text variant="h2" style={styles.modalTitle}>試験を選択</Text>
+              <TouchableOpacity
+                onPress={() => setShowExamModal(false)}
+                style={styles.modalCloseButton}
+              >
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalScrollView}>
+              {exams.map((exam) => {
+                const isDisabled = exam.questionCount === 0;
+                return (
+                  <TouchableOpacity
+                    key={exam.id}
+                    onPress={() => handleExamChange(exam.id)}
+                    activeOpacity={isDisabled ? 1 : 0.7}
+                    disabled={isDisabled}
+                    style={styles.examOption}
+                  >
+                    <Card style={[
+                      styles.examOptionCard,
+                      selectedExamId === exam.id && styles.examOptionCardSelected,
+                      isDisabled && styles.examOptionCardDisabled
+                    ]}>
+                      <View style={styles.examOptionContent}>
+                        <Ionicons
+                          name={selectedExamId === exam.id ? "radio-button-on" : "radio-button-off"}
+                          size={24}
+                          color={
+                            isDisabled 
+                              ? colors.textLight 
+                              : selectedExamId === exam.id 
+                                ? colors.primary 
+                                : colors.textLight
+                          }
+                        />
+                        <View style={styles.examOptionText}>
+                          <View style={styles.examOptionTitleRow}>
+                            <Text variant="body" style={[
+                              styles.examOptionTitle,
+                              selectedExamId === exam.id && styles.examOptionTitleSelected,
+                              isDisabled && styles.examOptionTitleDisabled
+                            ]}>
+                              {exam.name}
+                            </Text>
+                            {isDisabled && (
+                              <View style={styles.preparingBadge}>
+                                <Text variant="caption" style={styles.preparingText}>
+                                  準備中
+                                </Text>
+                              </View>
+                            )}
+                          </View>
+                          {exam.description && (
+                            <Text variant="caption" color={colors.textLight} style={[
+                              styles.examOptionDescription,
+                              isDisabled && styles.examOptionDescriptionDisabled
+                            ]}>
+                              {exam.description}
+                            </Text>
+                          )}
+                        </View>
+                      </View>
+                    </Card>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -450,5 +699,105 @@ const styles = StyleSheet.create({
   },
   timeSaveButton: {
     flex: 1,
+  },
+  menuContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  menuTextContainer: {
+    flex: 1,
+    marginLeft: spacing.sm,
+  },
+  menuDescription: {
+    marginTop: spacing.xs,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.background,
+    borderTopLeftRadius: borderRadius.lg,
+    borderTopRightRadius: borderRadius.lg,
+    maxHeight: '80%',
+    paddingBottom: spacing.xl,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  modalTitle: {
+    fontWeight: 'bold',
+  },
+  modalCloseButton: {
+    padding: spacing.xs,
+  },
+  modalScrollView: {
+    padding: spacing.lg,
+  },
+  examOption: {
+    marginBottom: spacing.md,
+  },
+  examOptionCard: {
+    padding: spacing.lg,
+    borderWidth: 2,
+    borderColor: colors.border,
+  },
+  examOptionCardSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary + '10',
+  },
+  examOptionContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+  },
+  examOptionText: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  examOptionTitle: {
+    fontWeight: '600',
+  },
+  examOptionTitleSelected: {
+    color: colors.primary,
+  },
+  examOptionDescription: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  examOptionCardDisabled: {
+    opacity: 0.5,
+    backgroundColor: colors.surface,
+  },
+  examOptionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flexWrap: 'wrap',
+  },
+  examOptionTitleDisabled: {
+    color: colors.textLight,
+  },
+  examOptionDescriptionDisabled: {
+    opacity: 0.6,
+  },
+  preparingBadge: {
+    backgroundColor: colors.border,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
+  },
+  preparingText: {
+    color: colors.textLight,
+    fontSize: 10,
+    fontWeight: '600',
   },
 });

@@ -33,10 +33,42 @@ export const useQuiz = (questionCount: number = 5) => {
       setLoading(true);
       setError(null);
 
+      // ユーザーの選択した試験を取得
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('ユーザーが認証されていません');
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('selected_exam_id')
+        .eq('id', user.id)
+        .single();
+
+      const examId = profile?.selected_exam_id;
+      if (!examId) {
+        throw new Error('試験が選択されていません。設定画面で試験を選択してください。');
+      }
+
+      // 選択された試験のカテゴリIDを取得
+      const { data: categories, error: categoriesError } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('exam_id', examId);
+
+      if (categoriesError) throw categoriesError;
+
+      if (!categories || categories.length === 0) {
+        throw new Error('選択された試験にカテゴリがありません');
+      }
+
+      const categoryIds = categories.map(c => c.id);
+
       // まず問題数を取得
       let countQuery = supabase
         .from('questions')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .in('category_id', categoryIds);
 
       if (categoryId) {
         countQuery = countQuery.eq('category_id', categoryId);
@@ -51,6 +83,7 @@ export const useQuiz = (questionCount: number = 5) => {
       let query = supabase
         .from('questions')
         .select('*')
+        .in('category_id', categoryIds)
         .limit(limit);
 
       if (categoryId) {

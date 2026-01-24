@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Card, Text, LineChart, MonthlyCalendar } from '../../components/ui';
 import { colors, spacing, borderRadius } from '../../constants/theme';
@@ -49,6 +50,16 @@ export default function StatsScreen() {
     }
   }, [user, authLoading]);
 
+  // 画面がフォーカスされたときに統計を再取得
+  useFocusEffect(
+    useCallback(() => {
+      if (!authLoading && user) {
+        fetchStats();
+      }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user, authLoading])
+  );
+
   const fetchStats = async () => {
     if (!user) {
       setLoading(false);
@@ -58,11 +69,52 @@ export default function StatsScreen() {
     setLoading(true);
     setError(null);
     try {
-      // 全回答数と正解数を取得
+      // ユーザーの選択した試験を取得
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('selected_exam_id')
+        .eq('id', user.id)
+        .single();
+
+      const examId = profile?.selected_exam_id;
+      if (!examId) {
+        setError('試験が選択されていません。設定画面で試験を選択してください。');
+        setLoading(false);
+        return;
+      }
+
+      // 選択された試験のカテゴリIDを取得
+      const { data: categories, error: categoriesError } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('exam_id', examId);
+
+      if (categoriesError) throw categoriesError;
+
+      if (!categories || categories.length === 0) {
+        setError('選択された試験にカテゴリがありません');
+        setLoading(false);
+        return;
+      }
+
+      const categoryIds = categories.map(c => c.id);
+
+      // 選択された試験の問題IDを取得
+      const { data: questionIds, error: questionIdsError } = await supabase
+        .from('questions')
+        .select('id')
+        .in('category_id', categoryIds);
+
+      if (questionIdsError) throw questionIdsError;
+
+      const questionIdList = questionIds?.map(q => q.id) || [];
+
+      // 選択された試験の問題に対する回答のみを取得
       const { data: answers, error: answersError } = await supabase
         .from('user_answers')
         .select('is_correct')
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .in('question_id', questionIdList);
 
       if (answersError) throw answersError;
 
@@ -70,7 +122,9 @@ export default function StatsScreen() {
       const correctAnswers = answers?.filter(a => a.is_correct).length || 0;
       const accuracy = totalAnswers > 0 ? Math.round((correctAnswers / totalAnswers) * 100) : 0;
 
-      // 学習日数を取得
+      // 学習日数を取得（選択された試験の問題を解いた日のみ）
+      // 注意: daily_progressは試験別に分離していないため、全学習日数を表示
+      // 試験別に分離する場合は、daily_progressにexam_idを追加する必要がある
       const { data: progress, error: progressError } = await supabase
         .from('daily_progress')
         .select('date')
@@ -78,9 +132,20 @@ export default function StatsScreen() {
 
       if (progressError) throw progressError;
 
-      const totalDays = progress?.length || 0;
+      // 選択された試験の問題を解いた日のみをカウント
+      // 簡易実装: 回答がある日を学習日としてカウント
+      const studyDates = new Set<string>();
+      answers?.forEach((answer: any) => {
+        // answered_atから日付を抽出
+        if (answer.answered_at) {
+          const date = new Date(answer.answered_at);
+          const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+          studyDates.add(dateStr);
+        }
+      });
+      const totalDays = studyDates.size;
 
-      // 分野別の正答率を取得
+      // 分野別の正答率を取得（選択された試験のカテゴリのみ）
       const { data: answersWithQuestions, error: categoryError } = await supabase
         .from('user_answers')
         .select(`
@@ -91,7 +156,8 @@ export default function StatsScreen() {
             categories(name)
           )
         `)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .in('question_id', questionIdList);
 
       if (categoryError) throw categoryError;
 
@@ -156,11 +222,12 @@ export default function StatsScreen() {
       thirtyDaysAgo.setDate(today.getDate() - 29); // 30日間（今日含む）
       thirtyDaysAgo.setHours(0, 0, 0, 0);
 
-      // 過去30日間の回答データを取得
+      // 過去30日間の回答データを取得（選択された試験の問題のみ）
       const { data: recentAnswers, error: recentAnswersError } = await supabase
         .from('user_answers')
         .select('is_correct, answered_at')
         .eq('user_id', user.id)
+        .in('question_id', questionIdList)
         .gte('answered_at', thirtyDaysAgo.toISOString())
         .order('answered_at', { ascending: true });
 

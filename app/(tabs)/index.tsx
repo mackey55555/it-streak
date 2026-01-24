@@ -1,6 +1,6 @@
 import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Animated, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, ProgressBar, Text, StreakCardSkeleton, ProgressCardSkeleton } from '../../components/ui';
 import { colors, spacing, borderRadius } from '../../constants/theme';
@@ -8,7 +8,7 @@ import { useStreak } from '../../hooks/useStreak';
 import { useDailyProgress } from '../../hooks/useDailyProgress';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -27,8 +27,56 @@ export default function HomeScreen() {
   const [previousStreak, setPreviousStreak] = useState(0);
   const [weeklyProgress, setWeeklyProgress] = useState<Array<{ date: string; completed: boolean }>>([]);
   const [weeklyLoading, setWeeklyLoading] = useState(false);
+  const [selectedExamName, setSelectedExamName] = useState<string>('');
   const streakScale = useRef(new Animated.Value(1)).current;
   const streakPulse = useRef(new Animated.Value(1)).current;
+
+  // 選択された試験を取得
+  const fetchSelectedExam = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('selected_exam_id')
+        .eq('id', user.id)
+        .single();
+
+      if (profile?.selected_exam_id) {
+        const { data: examData } = await supabase
+          .from('exams')
+          .select('name')
+          .eq('id', profile.selected_exam_id)
+          .single();
+
+        if (examData) {
+          setSelectedExamName(examData.name);
+        } else {
+          setSelectedExamName('');
+        }
+      } else {
+        setSelectedExamName('');
+      }
+    } catch (error) {
+      console.error('Error fetching selected exam:', error);
+      setSelectedExamName('');
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchSelectedExam();
+    }
+  }, [user, fetchSelectedExam]);
+
+  // 画面がフォーカスされたときに試験を再取得
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        fetchSelectedExam();
+      }
+    }, [user, fetchSelectedExam])
+  );
 
   // ストリーク更新時のアニメーション
   useEffect(() => {
@@ -190,6 +238,22 @@ export default function HomeScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
+        {/* 現在の試験表示 */}
+        {selectedExamName && (
+          <View style={styles.examBadge}>
+            <Ionicons name="school-outline" size={16} color={colors.primary} />
+            <Text variant="caption" style={styles.examBadgeText}>
+              {selectedExamName}
+            </Text>
+            <TouchableOpacity
+              onPress={() => router.push('/(tabs)/settings')}
+              style={styles.examBadgeButton}
+            >
+              <Ionicons name="settings-outline" size={14} color={colors.textLight} />
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* ストリーク表示 */}
         <Animated.View
           style={[
@@ -555,6 +619,26 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: spacing.xs,
     fontSize: 12,
+  },
+  examBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.background,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: spacing.sm,
+  },
+  examBadgeText: {
+    flex: 1,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  examBadgeButton: {
+    padding: spacing.xs,
   },
 });
 

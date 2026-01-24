@@ -39,16 +39,31 @@ export default function CategorySelectScreen() {
     setLoading(true);
     setError(null);
     try {
-      // 全カテゴリを取得
+      // ユーザーの選択した試験を取得
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('selected_exam_id')
+        .eq('id', user.id)
+        .single();
+
+      const examId = profile?.selected_exam_id;
+      if (!examId) {
+        setError('試験が選択されていません。設定画面で試験を選択してください。');
+        setLoading(false);
+        return;
+      }
+
+      // 選択された試験のカテゴリのみを取得
       const { data: allCategories, error: categoriesError } = await supabase
         .from('categories')
         .select('*')
+        .eq('exam_id', examId)
         .order('name');
 
       if (categoriesError) throw categoriesError;
 
       if (!allCategories || allCategories.length === 0) {
-        setError('カテゴリが見つかりませんでした');
+        setError('選択された試験にカテゴリがありません');
         setLoading(false);
         return;
       }
@@ -68,11 +83,14 @@ export default function CategorySelectScreen() {
 
       if (statsError) throw statsError;
 
-      // 各カテゴリの問題数を取得
+      // 選択された試験のカテゴリIDリスト
+      const categoryIds = allCategories.map(c => c.id);
+
+      // 各カテゴリの問題数を取得（選択された試験のカテゴリのみ）
       const { data: questionCounts, error: questionCountsError } = await supabase
         .from('questions')
         .select('category_id')
-        .not('category_id', 'is', null);
+        .in('category_id', categoryIds);
 
       if (questionCountsError) throw questionCountsError;
 
@@ -126,11 +144,11 @@ export default function CategorySelectScreen() {
     }
   };
 
-  const handleCategorySelect = async (categoryId: string, categoryName: string) => {
-    // 問題が存在するか確認
+  const handleCategorySelect = (categoryId: string, categoryName: string) => {
     const category = categories.find(c => c.id === categoryId);
     if (category && category.questionCount === 0) {
-      // アラート表示はクイズ画面で行うため、ここでは遷移のみ
+      // 問題がないカテゴリは選択できない
+      return;
     }
 
     router.push({
@@ -203,85 +221,113 @@ export default function CategorySelectScreen() {
             </Text>
           </Card>
         ) : (
-          categories.map((category) => (
-            <TouchableOpacity
-              key={category.id}
-              onPress={() => handleCategorySelect(category.id, category.name)}
-              activeOpacity={0.7}
-              style={styles.categoryItem}
-            >
-              <Card style={styles.categoryCard}>
-                <View style={styles.categoryHeader}>
-                  <View style={styles.categoryInfo}>
-                    <Text variant="h3" style={styles.categoryName}>
-                      {category.name}
-                    </Text>
-                    {category.description && (
-                      <Text variant="caption" color={colors.textLight} style={styles.categoryDescription}>
-                        {category.description}
-                      </Text>
+          categories.map((category) => {
+            const isDisabled = category.questionCount === 0;
+            return (
+              <TouchableOpacity
+                key={category.id}
+                onPress={() => handleCategorySelect(category.id, category.name)}
+                activeOpacity={isDisabled ? 1 : 0.7}
+                disabled={isDisabled}
+                style={styles.categoryItem}
+              >
+                <Card style={[
+                  styles.categoryCard,
+                  isDisabled && styles.categoryCardDisabled
+                ]}>
+                  <View style={styles.categoryHeader}>
+                    <View style={styles.categoryInfo}>
+                      <View style={styles.categoryNameRow}>
+                        <Text variant="h3" style={[
+                          styles.categoryName,
+                          isDisabled && styles.categoryNameDisabled
+                        ]}>
+                          {category.name}
+                        </Text>
+                        {isDisabled && (
+                          <View style={styles.preparingBadge}>
+                            <Text variant="caption" style={styles.preparingText}>
+                              準備中
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                      {category.description && (
+                        <Text variant="caption" color={colors.textLight} style={[
+                          styles.categoryDescription,
+                          isDisabled && styles.categoryDescriptionDisabled
+                        ]}>
+                          {category.description}
+                        </Text>
+                      )}
+                    </View>
+                    {!isDisabled && (
+                      <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
                     )}
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
-                </View>
 
-                <View style={styles.statsContainer}>
-                  <View style={styles.statItem}>
-                    <Text variant="caption" color={colors.textLight}>問題数</Text>
-                    <Text variant="body" style={styles.statValue}>
-                      {category.questionCount}問
-                    </Text>
-                  </View>
-                  {category.totalAnswers > 0 && (
+                  {!isDisabled && (
                     <>
-                      <View style={styles.statDivider} />
-                      <View style={styles.statItem}>
-                        <Text variant="caption" color={colors.textLight}>回答数</Text>
-                        <Text variant="body" style={styles.statValue}>
-                          {category.totalAnswers}問
-                        </Text>
+                      <View style={styles.statsContainer}>
+                        <View style={styles.statItem}>
+                          <Text variant="caption" color={colors.textLight}>問題数</Text>
+                          <Text variant="body" style={styles.statValue}>
+                            {category.questionCount}問
+                          </Text>
+                        </View>
+                        {category.totalAnswers > 0 && (
+                          <>
+                            <View style={styles.statDivider} />
+                            <View style={styles.statItem}>
+                              <Text variant="caption" color={colors.textLight}>回答数</Text>
+                              <Text variant="body" style={styles.statValue}>
+                                {category.totalAnswers}問
+                              </Text>
+                            </View>
+                            <View style={styles.statDivider} />
+                            <View style={styles.statItem}>
+                              <Text variant="caption" color={colors.textLight}>正答率</Text>
+                              <Text 
+                                variant="body" 
+                                style={[
+                                  styles.statValue,
+                                  { 
+                                    color: category.accuracy >= 80 
+                                      ? colors.correct 
+                                      : category.accuracy >= 60 
+                                      ? colors.secondary 
+                                      : colors.incorrect 
+                                  }
+                                ]}
+                              >
+                                {category.accuracy}%
+                              </Text>
+                            </View>
+                          </>
+                        )}
                       </View>
-                      <View style={styles.statDivider} />
-                      <View style={styles.statItem}>
-                        <Text variant="caption" color={colors.textLight}>正答率</Text>
-                        <Text 
-                          variant="body" 
-                          style={[
-                            styles.statValue,
-                            { 
-                              color: category.accuracy >= 80 
+
+                      {category.totalAnswers > 0 && (
+                        <View style={styles.progressBarContainer}>
+                          <View style={[
+                            styles.progressBarFill,
+                            {
+                              width: `${category.accuracy}%`,
+                              backgroundColor: category.accuracy >= 80 
                                 ? colors.correct 
                                 : category.accuracy >= 60 
                                 ? colors.secondary 
-                                : colors.incorrect 
+                                : colors.incorrect,
                             }
-                          ]}
-                        >
-                          {category.accuracy}%
-                        </Text>
-                      </View>
+                          ]} />
+                        </View>
+                      )}
                     </>
                   )}
-                </View>
-
-                {category.totalAnswers > 0 && (
-                  <View style={styles.progressBarContainer}>
-                    <View style={[
-                      styles.progressBarFill,
-                      {
-                        width: `${category.accuracy}%`,
-                        backgroundColor: category.accuracy >= 80 
-                          ? colors.correct 
-                          : category.accuracy >= 60 
-                          ? colors.secondary 
-                          : colors.incorrect,
-                      }
-                    ]} />
-                  </View>
-                )}
-              </Card>
-            </TouchableOpacity>
-          ))
+                </Card>
+              </TouchableOpacity>
+            );
+          })
         )}
       </ScrollView>
     </SafeAreaView>
@@ -379,5 +425,32 @@ const styles = StyleSheet.create({
   progressBarFill: {
     height: '100%',
     borderRadius: borderRadius.full,
+  },
+  categoryCardDisabled: {
+    opacity: 0.5,
+    backgroundColor: colors.surface,
+  },
+  categoryNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flexWrap: 'wrap',
+  },
+  categoryNameDisabled: {
+    color: colors.textLight,
+  },
+  categoryDescriptionDisabled: {
+    opacity: 0.6,
+  },
+  preparingBadge: {
+    backgroundColor: colors.border,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
+  },
+  preparingText: {
+    color: colors.textLight,
+    fontSize: 10,
+    fontWeight: '600',
   },
 });
