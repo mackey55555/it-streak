@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Button, Card, ProgressBar, Text } from '../../components/ui';
+import { Button, Card, ProgressBar, Text, ErrorView, Skeleton } from '../../components/ui';
+import { Confetti } from '../../components/ui/Confetti';
 import { colors, spacing, borderRadius } from '../../constants/theme';
 import { useQuiz } from '../../hooks/useQuiz';
 import { useDailyProgress } from '../../hooks/useDailyProgress';
@@ -31,6 +32,8 @@ export default function QuizScreen() {
   const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
   const [answerState, setAnswerState] = useState<AnswerState>('unanswered');
   const [currentExplanation, setCurrentExplanation] = useState<string>('');
+  const [showConfetti, setShowConfetti] = useState(false);
+  const resultBannerScale = useRef(new Animated.Value(0)).current;
 
   // 初回読み込み
   useEffect(() => {
@@ -62,9 +65,29 @@ export default function QuizScreen() {
     
     const result = await submitAnswer(selectedChoice as 'A' | 'B' | 'C' | 'D');
     if (result) {
-      setAnswerState(result.isCorrect ? 'correct' : 'incorrect');
+      const isCorrect = result.isCorrect;
+      setAnswerState(isCorrect ? 'correct' : 'incorrect');
       setCurrentExplanation(currentQuestion.explanation || '');
-      recordProgress(result.isCorrect);
+      recordProgress(isCorrect);
+
+      // 正解時のアニメーション（同時に開始）
+      if (isCorrect) {
+        // 紙吹雪とポップアップを同時に開始
+        setShowConfetti(true);
+        Animated.spring(resultBannerScale, {
+          toValue: 1,
+          tension: 50,
+          friction: 7,
+          useNativeDriver: true,
+        }).start();
+      } else {
+        Animated.spring(resultBannerScale, {
+          toValue: 1,
+          tension: 50,
+          friction: 7,
+          useNativeDriver: true,
+        }).start();
+      }
     }
   };
 
@@ -72,6 +95,8 @@ export default function QuizScreen() {
     setSelectedChoice(null);
     setAnswerState('unanswered');
     setCurrentExplanation('');
+    setShowConfetti(false);
+    resultBannerScale.setValue(0);
     nextQuestion();
   };
 
@@ -98,9 +123,26 @@ export default function QuizScreen() {
   // ローディング中
   if (loading && !currentQuestion) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text variant="body" style={styles.loadingText}>問題を読み込み中...</Text>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <Skeleton width={40} height={40} borderRadius={20} />
+          <View style={styles.progressContainer}>
+            <Skeleton width="100%" height={8} />
+          </View>
+          <Skeleton width={50} height={20} />
+        </View>
+        <View style={styles.content}>
+          <Card style={styles.questionCard}>
+            <Skeleton width="100%" height={24} style={{ marginBottom: spacing.md }} />
+            <Skeleton width="90%" height={20} style={{ marginBottom: spacing.sm }} />
+            <Skeleton width="80%" height={20} />
+          </Card>
+          <View style={styles.choicesContainer}>
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} width="100%" height={60} style={{ marginBottom: spacing.md }} />
+            ))}
+          </View>
+        </View>
       </SafeAreaView>
     );
   }
@@ -108,10 +150,15 @@ export default function QuizScreen() {
   // エラー時
   if (error) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <Text variant="h3" color={colors.incorrect}>エラーが発生しました</Text>
-        <Text variant="body" style={styles.errorText}>{error}</Text>
-        <Button title="戻る" onPress={handleClose} style={styles.errorButton} />
+      <SafeAreaView style={styles.container}>
+        <ErrorView
+          message={error}
+          onRetry={fetchQuestions}
+          retryLabel="再試行"
+        />
+        <View style={styles.errorFooter}>
+          <Button title="戻る" onPress={handleClose} variant="ghost" />
+        </View>
       </SafeAreaView>
     );
   }
@@ -136,6 +183,9 @@ export default function QuizScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
+      {/* 紙吹雪アニメーション */}
+      <Confetti visible={showConfetti} duration={2000} />
+      
       {/* ヘッダー */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
@@ -198,10 +248,15 @@ export default function QuizScreen() {
         ) : (
           <>
             {/* 正誤表示 */}
-            <View style={[
-              styles.resultBanner,
-              answerState === 'correct' ? styles.resultCorrect : styles.resultIncorrect
-            ]}>
+            <Animated.View
+              style={[
+                styles.resultBanner,
+                answerState === 'correct' ? styles.resultCorrect : styles.resultIncorrect,
+                {
+                  transform: [{ scale: resultBannerScale }],
+                },
+              ]}
+            >
               <View style={styles.resultContent}>
                 <Text variant="h2" style={styles.resultIcon}>
                   {answerState === 'correct' ? '✓' : '✕'}
@@ -217,7 +272,7 @@ export default function QuizScreen() {
                   ) : null}
                 </View>
               </View>
-            </View>
+            </Animated.View>
             
             <Button
               title={currentIndex + 1 >= totalQuestions ? "結果を見る" : "次へ"}
@@ -247,13 +302,9 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: spacing.md,
   },
-  errorText: {
-    textAlign: 'center',
-    color: colors.textLight,
-  },
-  errorButton: {
-    marginTop: spacing.lg,
-    minWidth: 120,
+  errorFooter: {
+    padding: spacing.lg,
+    paddingTop: 0,
   },
   header: {
     paddingHorizontal: spacing.lg,

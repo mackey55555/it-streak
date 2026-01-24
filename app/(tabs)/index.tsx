@@ -1,11 +1,11 @@
-import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Button, Card, ProgressBar, Text } from '../../components/ui';
+import { Button, Card, ProgressBar, Text, SkeletonCard } from '../../components/ui';
 import { colors, spacing, borderRadius } from '../../constants/theme';
 import { useStreak } from '../../hooks/useStreak';
 import { useDailyProgress } from '../../hooks/useDailyProgress';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -20,6 +20,45 @@ export default function HomeScreen() {
   } = useDailyProgress();
 
   const [refreshing, setRefreshing] = useState(false);
+  const [previousStreak, setPreviousStreak] = useState(0);
+  const streakScale = useRef(new Animated.Value(1)).current;
+  const streakPulse = useRef(new Animated.Value(1)).current;
+
+  // ストリーク更新時のアニメーション
+  useEffect(() => {
+    if (currentStreak > previousStreak && previousStreak > 0) {
+      // ストリークが増えた時のアニメーション
+      Animated.sequence([
+        Animated.parallel([
+          Animated.spring(streakScale, {
+            toValue: 1.2,
+            tension: 50,
+            friction: 5,
+            useNativeDriver: true,
+          }),
+          Animated.timing(streakPulse, {
+            toValue: 1.3,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.parallel([
+          Animated.spring(streakScale, {
+            toValue: 1,
+            tension: 50,
+            friction: 5,
+            useNativeDriver: true,
+          }),
+          Animated.timing(streakPulse, {
+            toValue: 1,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]),
+      ]).start();
+    }
+    setPreviousStreak(currentStreak);
+  }, [currentStreak]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -46,20 +85,38 @@ export default function HomeScreen() {
       >
         {loading && !currentStreak ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color={colors.primary} />
+            <SkeletonCard />
+            <SkeletonCard />
           </View>
         ) : (
           <>
             {/* ストリーク表示 */}
-            <Card style={styles.streakCard}>
-              <View style={styles.streakContent}>
-                <Text variant="h1" style={styles.streakEmoji}>🔥</Text>
-                <View style={styles.streakTextContainer}>
-                  <Text variant="h2" style={styles.streakNumber}>{currentStreak}</Text>
-                  <Text variant="body" color={colors.textLight}>日連続！</Text>
+            <Animated.View
+              style={[
+                styles.streakCardWrapper,
+                {
+                  transform: [
+                    { scale: streakScale },
+                  ],
+                },
+              ]}
+            >
+              <Card style={styles.streakCard}>
+                <View style={styles.streakContent}>
+                  <Animated.View
+                    style={{
+                      transform: [{ scale: streakPulse }],
+                    }}
+                  >
+                    <Text variant="h1" style={styles.streakEmoji}>🔥</Text>
+                  </Animated.View>
+                  <View style={styles.streakTextContainer}>
+                    <Text variant="h2" style={styles.streakNumber}>{currentStreak}</Text>
+                    <Text variant="body" color={colors.textLight}>日連続！</Text>
+                  </View>
                 </View>
-              </View>
-            </Card>
+              </Card>
+            </Animated.View>
 
             {/* 今日の進捗カード */}
             <Card style={[
@@ -149,8 +206,10 @@ const styles = StyleSheet.create({
     padding: spacing.xxl,
     alignItems: 'center',
   },
-  streakCard: {
+  streakCardWrapper: {
     marginBottom: spacing.lg,
+  },
+  streakCard: {
     backgroundColor: colors.streak,
   },
   streakContent: {

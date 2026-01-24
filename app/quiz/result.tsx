@@ -1,10 +1,10 @@
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Button, Card, Text } from '../../components/ui';
+import { Button, Card, Text, Confetti } from '../../components/ui';
 import { colors, spacing, borderRadius } from '../../constants/theme';
 import { useStreak } from '../../hooks/useStreak';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 export default function ResultScreen() {
   const router = useRouter();
@@ -17,11 +17,36 @@ export default function ResultScreen() {
   const percentage = total > 0 ? Math.round((correct / total) * 100) : 0;
   const xp = correct * 10; // 正解数 × 10
 
+  const [showConfetti, setShowConfetti] = useState(false);
+  const cardScale = useRef(new Animated.Value(0)).current;
+  const scoreOpacity = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     // ストリーク情報を更新
     refetchStreak();
     // 前回のストリークを保存（ストリーク継続判定用）
     setPreviousStreak(currentStreak);
+
+    // アニメーション開始
+    Animated.parallel([
+      Animated.spring(cardScale, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scoreOpacity, {
+        toValue: 1,
+        duration: 800,
+        delay: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // 高得点の場合は紙吹雪を表示
+    if (percentage >= 80) {
+      setTimeout(() => setShowConfetti(true), 500);
+    }
   }, []);
 
   const getMessage = () => {
@@ -48,17 +73,35 @@ export default function ResultScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      {/* 紙吹雪アニメーション */}
+      <Confetti visible={showConfetti} duration={3000} />
+      
       <View style={styles.content}>
         {/* 結果カード */}
-        <Card style={styles.resultCard}>
+        <Animated.View
+          style={[
+            styles.resultCardWrapper,
+            {
+              transform: [{ scale: cardScale }],
+            },
+          ]}
+        >
+          <Card style={styles.resultCard}>
           <Text variant="h1" style={styles.emoji}>{message.emoji}</Text>
           <Text variant="h2" style={styles.message}>{message.text}</Text>
           
-          <View style={styles.scoreContainer}>
+          <Animated.View
+            style={[
+              styles.scoreContainer,
+              {
+                opacity: scoreOpacity,
+              },
+            ]}
+          >
             <Text variant="h1" style={styles.score}>{correct}</Text>
             <Text variant="h3" style={styles.scoreDivider}>/</Text>
             <Text variant="h2" style={styles.totalScore}>{total}</Text>
-          </View>
+          </Animated.View>
           
           <Text variant="body" color={colors.textLight} style={styles.percentage}>
             正答率 {percentage}%
@@ -80,7 +123,8 @@ export default function ResultScreen() {
               </Text>
             </View>
           )}
-        </Card>
+          </Card>
+        </Animated.View>
 
         {/* ボタン */}
         <View style={styles.buttonContainer}>
@@ -111,10 +155,12 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     justifyContent: 'center',
   },
+  resultCardWrapper: {
+    marginBottom: spacing.xl,
+  },
   resultCard: {
     alignItems: 'center',
     paddingVertical: spacing.xxl,
-    marginBottom: spacing.xl,
   },
   emoji: {
     fontSize: 64,
