@@ -1,15 +1,48 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { useAuth } from '../hooks/useAuth';
 import { usePushNotifications } from '../hooks/usePushNotifications';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { colors } from '../constants/theme';
+
+// スプラッシュスクリーンの自動非表示を防ぐ
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const { user, loading } = useAuth();
   const { registerForPushNotifications } = usePushNotifications();
   const segments = useSegments();
   const router = useRouter();
+  const [appIsReady, setAppIsReady] = useState(false);
+
+  // アプリの準備が整ったかどうかを管理（認証読み込み完了 + 最低2秒経過）
+  useEffect(() => {
+    async function prepare() {
+      try {
+        // 最低2秒間スプラッシュスクリーンを表示
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } catch (e) {
+        console.warn(e);
+      } finally {
+        // 認証の読み込みが完了し、かつ2秒経過したら準備完了
+        if (!loading) {
+          setAppIsReady(true);
+        }
+      }
+    }
+
+    if (!loading) {
+      prepare();
+    }
+  }, [loading]);
+
+  // アプリの準備が整ったらスプラッシュスクリーンを非表示
+  useEffect(() => {
+    if (appIsReady) {
+      SplashScreen.hideAsync();
+    }
+  }, [appIsReady]);
 
   useEffect(() => {
     if (loading) return;
@@ -32,12 +65,8 @@ export default function RootLayout() {
     }
   }, [user, loading]);
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
+  if (!appIsReady || loading) {
+    return null; // スプラッシュスクリーンが表示されている間は何も表示しない
   }
 
   return (
