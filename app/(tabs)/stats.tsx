@@ -223,8 +223,14 @@ export default function StatsScreen() {
           <View style={styles.section}>
             <Text variant="h3" style={styles.sectionTitle}>分野別正答率</Text>
             <Card style={styles.card}>
-              {categoryStats.map((category) => (
-                <View key={category.categoryId} style={styles.categoryItem}>
+              {categoryStats.map((category, index) => (
+                <View 
+                  key={category.categoryId} 
+                  style={[
+                    styles.categoryItem,
+                    index === categoryStats.length - 1 && styles.categoryItemLast
+                  ]}
+                >
                   <View style={styles.categoryHeader}>
                     <Text variant="body" style={styles.categoryName}>
                       {category.categoryName}
@@ -321,7 +327,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.xxl + 20, // タブバーの高さ分の余白を追加
   },
   loadingContainer: {
     flex: 1,
@@ -338,15 +344,18 @@ const styles = StyleSheet.create({
     color: colors.textLight,
   },
   header: {
-    marginBottom: spacing.xl,
+    marginBottom: spacing.xxl,
     color: colors.text,
+    fontWeight: 'bold',
   },
   section: {
-    marginBottom: spacing.xl,
+    marginBottom: spacing.xxl,
   },
   sectionTitle: {
-    marginBottom: spacing.md,
-    color: colors.textLight,
+    marginBottom: spacing.lg,
+    color: colors.text,
+    fontWeight: '600',
+    fontSize: 18,
   },
   statsGrid: {
     flexDirection: 'row',
@@ -362,13 +371,14 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   card: {
-    padding: spacing.lg,
+    padding: spacing.xl,
   },
   statRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.lg,
+    minHeight: 56,
   },
   statRowValue: {
     fontWeight: 'bold',
@@ -378,17 +388,21 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
   },
   messageCard: {
-    padding: spacing.lg,
-    backgroundColor: colors.primary + '15',
+    padding: spacing.xl,
+    backgroundColor: colors.primary + '10',
     borderWidth: 1,
-    borderColor: colors.primary + '30',
+    borderColor: colors.primary + '20',
+    borderRadius: borderRadius.lg,
   },
   messageText: {
     textAlign: 'center',
     lineHeight: 24,
   },
   categoryItem: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
+    paddingBottom: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   categoryHeader: {
     flexDirection: 'row',
@@ -421,7 +435,8 @@ const styles = StyleSheet.create({
   calendarContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
+    paddingVertical: spacing.md,
   },
   calendarDay: {
     alignItems: 'center',
@@ -431,9 +446,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   calendarDayCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: colors.surface,
     borderWidth: 2,
     borderColor: colors.border,

@@ -45,138 +45,197 @@ interface ConfettiData {
 }
 
 export const Confetti = ({ visible, duration = 2000 }: ConfettiProps) => {
-  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
   const confettiDataRef = useRef<ConfettiData[]>([]);
   const confettiRefs = useRef<Animated.Value[]>([]);
   const opacityRefs = useRef<Animated.Value[]>([]);
+  const isInitializedRef = useRef(false);
+  const animationRunningRef = useRef(false);
 
-  // 紙吹雪のデータを初期化（一度だけ）
+  // 紙吹雪のデータとアニメーション値を初期化（一度だけ）
   useEffect(() => {
-    if (confettiDataRef.current.length === 0) {
-      const initData = () => {
-        const width = screenWidth || Dimensions.get('window').width;
-        const height = screenHeight || Dimensions.get('window').height;
-        
-        if (width > 0 && height > 0) {
-          confettiDataRef.current = Array.from({ length: CONFETTI_COUNT }, () => {
-            // 画面の左右（画面外）の下部から開始
-            const isLeftSide = Math.random() > 0.5;
-            const startX = isLeftSide 
-              ? -50 - Math.random() * 100 // 左側の画面外
-              : width + 50 + Math.random() * 100; // 右側の画面外
-            const startY = height * 0.8 + Math.random() * height * 0.2; // 画面下部80-100%の位置（もっと下から）
-            
-            // 画面中央に向かって吹き上がってから落下
-            const centerX = width / 2;
-            const endX = centerX + (Math.random() - 0.5) * width * 0.5; // 中央付近に散る
-            const peakY = -50 - Math.random() * 100; // 最高点（画面上部の外まで吹き上がる）
-            const endY = height * 0.5 + Math.random() * height * 0.5; // 画面中央から下部に落下
-            
-            const rotation = Math.random() * 1440; // より多く回転（最大4回転）
-            const color = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
-            const size = Math.random() * 12 + 5; // サイズのバリエーションを増やす（5-17px）
-            const delay = 0; // 遅延なし（即座に開始）
-            const animDuration = duration + Math.random() * 800; // アニメーション時間
-            const shape = Math.random() > 0.7 
-              ? (Math.random() > 0.5 ? 'square' : 'rectangle')
-              : 'circle'; // 70%が円、30%が四角
-            const horizontalSway = (Math.random() - 0.5) * width * 0.3; // 左右の揺れ
-
-            return {
-              startX,
-              startY,
-              peakY,
-              endX,
-              endY,
-              rotation,
-              color,
-              size,
-              delay,
-              duration: animDuration,
-              shape,
-              horizontalSway,
-            };
-          });
-        }
-      };
-      
-      initData();
-      // 画面サイズが取得できていない場合は少し待って再試行
-      if (screenWidth === 0 || screenHeight === 0) {
-        const timer = setTimeout(initData, 100);
-        return () => clearTimeout(timer);
-      }
+    if (isInitializedRef.current) {
+      return; // 既に初期化済みの場合は何もしない
     }
-  }, [screenWidth, screenHeight, duration]);
+
+    const initData = () => {
+      const { width, height } = Dimensions.get('window');
+      
+      if (width > 0 && height > 0) {
+        // データを初期化
+        confettiDataRef.current = Array.from({ length: CONFETTI_COUNT }, () => {
+          // 画面の左右（画面外）の下部から開始
+          const isLeftSide = Math.random() > 0.5;
+          const startX = isLeftSide 
+            ? -50 - Math.random() * 100 // 左側の画面外
+            : width + 50 + Math.random() * 100; // 右側の画面外
+          const startY = height * 0.8 + Math.random() * height * 0.2; // 画面下部80-100%の位置
+          
+          // 画面中央に向かって吹き上がってから落下
+          const centerX = width / 2;
+          const endX = centerX + (Math.random() - 0.5) * width * 0.5; // 中央付近に散る
+          const peakY = -50 - Math.random() * 100; // 最高点（画面上部の外まで吹き上がる）
+          const endY = height * 0.5 + Math.random() * height * 0.5; // 画面中央から下部に落下
+          
+          const rotation = Math.random() * 1440; // より多く回転（最大4回転）
+          const color = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+          const size = Math.random() * 12 + 5; // サイズのバリエーションを増やす（5-17px）
+          const delay = 0; // 遅延なし（即座に開始）
+          const animDuration = duration + Math.random() * 800; // アニメーション時間
+          const shape = Math.random() > 0.7 
+            ? (Math.random() > 0.5 ? 'square' : 'rectangle')
+            : 'circle'; // 70%が円、30%が四角
+          const horizontalSway = (Math.random() - 0.5) * width * 0.3; // 左右の揺れ
+
+          return {
+            startX,
+            startY,
+            peakY,
+            endX,
+            endY,
+            rotation,
+            color,
+            size,
+            delay,
+            duration: animDuration,
+            shape,
+            horizontalSway,
+          };
+        });
+
+        // アニメーション値を初期化（一度だけ）
+        confettiRefs.current = Array.from({ length: CONFETTI_COUNT }, () => new Animated.Value(0));
+        opacityRefs.current = Array.from({ length: CONFETTI_COUNT }, () => new Animated.Value(1));
+        
+        isInitializedRef.current = true;
+      }
+    };
+    
+    initData();
+    // 画面サイズが取得できていない場合は少し待って再試行
+    const { width, height } = Dimensions.get('window');
+    if (width === 0 || height === 0) {
+      const timer = setTimeout(() => {
+        if (!isInitializedRef.current) {
+          initData();
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [duration]);
 
   useEffect(() => {
     if (!visible) {
       // 非表示時はリセット
-      if (confettiRefs.current.length > 0) {
+      if (isInitializedRef.current && confettiRefs.current.length > 0) {
         confettiRefs.current.forEach((anim) => anim.setValue(0));
         opacityRefs.current.forEach((anim) => anim.setValue(1));
       }
+      animationRunningRef.current = false;
       return;
     }
 
     // データが初期化されていない場合は待つ
-    if (confettiDataRef.current.length === 0) {
+    if (!isInitializedRef.current || confettiDataRef.current.length === 0) {
       return;
     }
 
-    // アニメーション値を初期化（毎回）
-    confettiRefs.current = Array.from({ length: CONFETTI_COUNT }, () => new Animated.Value(0));
-    opacityRefs.current = Array.from({ length: CONFETTI_COUNT }, () => new Animated.Value(1));
-
-    if (visible && confettiDataRef.current.length > 0) {
-      // アニメーション開始
-      const animations = confettiRefs.current.map((anim, index) => {
-        const data = confettiDataRef.current[index];
-        
-        return Animated.parallel([
-          Animated.timing(anim, {
-            toValue: 1,
-            duration: data.duration,
-            delay: data.delay,
-            easing: Easing.bezier(0.25, 0.1, 0.25, 1), // カスタムイージング（放物線に近い）
-            useNativeDriver: true,
-          }),
-          Animated.timing(opacityRefs.current[index], {
-            toValue: 0,
-            duration: data.duration * 0.7, // 少し早めにフェードアウト
-            delay: data.delay + data.duration * 0.3,
-            useNativeDriver: true,
-          }),
-        ]);
-      });
-
-      Animated.parallel(animations).start();
-
-      // アニメーション終了後にリセット
-      setTimeout(() => {
-        confettiRefs.current.forEach((anim) => anim.setValue(0));
-        opacityRefs.current.forEach((anim) => anim.setValue(1));
-      }, duration + 1500);
+    // 既にアニメーションが実行中の場合はスキップ
+    if (animationRunningRef.current) {
+      return;
     }
+
+    animationRunningRef.current = true;
+
+    // アニメーション値をリセット
+    confettiRefs.current.forEach((anim) => anim.setValue(0));
+    opacityRefs.current.forEach((anim) => anim.setValue(1));
+
+    // アニメーション開始
+    const animations = confettiRefs.current.map((anim, index) => {
+      const data = confettiDataRef.current[index];
+      
+      return Animated.parallel([
+        Animated.timing(anim, {
+          toValue: 1,
+          duration: data.duration,
+          delay: data.delay,
+          easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityRefs.current[index], {
+          toValue: 0,
+          duration: data.duration * 0.7,
+          delay: data.delay + data.duration * 0.3,
+          useNativeDriver: true,
+        }),
+      ]);
+    });
+
+    const parallelAnimation = Animated.parallel(animations);
+    
+    // コールバックを安全に処理
+    let isCleanedUp = false;
+    parallelAnimation.start((finished) => {
+      if (!isCleanedUp && finished) {
+        animationRunningRef.current = false;
+      }
+    });
+
+    // アニメーション終了後にリセット
+    const timeoutId = setTimeout(() => {
+      if (!isCleanedUp) {
+        confettiRefs.current.forEach((anim) => {
+          try {
+            anim.setValue(0);
+          } catch (e) {
+            // エラーを無視
+          }
+        });
+        opacityRefs.current.forEach((anim) => {
+          try {
+            anim.setValue(1);
+          } catch (e) {
+            // エラーを無視
+          }
+        });
+        animationRunningRef.current = false;
+      }
+    }, duration + 1500);
+
+    return () => {
+      isCleanedUp = true;
+      clearTimeout(timeoutId);
+      try {
+        parallelAnimation.stop();
+      } catch (e) {
+        // エラーを無視
+      }
+      animationRunningRef.current = false;
+    };
   }, [visible, duration]);
 
-  if (!visible || confettiDataRef.current.length === 0) return null;
+  if (!visible || !isInitializedRef.current || confettiDataRef.current.length === 0) {
+    return null;
+  }
 
   return (
     <View style={styles.container} pointerEvents="none">
       {confettiDataRef.current.map((data, index) => {
-        if (!confettiRefs.current[index] || !opacityRefs.current[index]) {
+        const animValue = confettiRefs.current[index];
+        const opacityValue = opacityRefs.current[index];
+
+        if (!animValue || !opacityValue) {
           return null;
         }
 
         // 放物線を描く：まず上昇（0-0.4）、その後落下（0.4-1）
-        const translateY = confettiRefs.current[index].interpolate({
+        const translateY = animValue.interpolate({
           inputRange: [0, 0.4, 1],
           outputRange: [data.startY, data.peakY, data.endY],
         });
 
         // 横方向の動き：左右から中央に向かって、途中で揺れながら
-        const translateX = confettiRefs.current[index].interpolate({
+        const translateX = animValue.interpolate({
           inputRange: [0, 0.3, 0.7, 1],
           outputRange: [
             data.startX,
@@ -187,7 +246,7 @@ export const Confetti = ({ visible, duration = 2000 }: ConfettiProps) => {
         });
 
         // より速い回転
-        const rotate = confettiRefs.current[index].interpolate({
+        const rotate = animValue.interpolate({
           inputRange: [0, 1],
           outputRange: ['0deg', `${data.rotation}deg`],
         });
@@ -205,7 +264,7 @@ export const Confetti = ({ visible, duration = 2000 }: ConfettiProps) => {
 
         return (
           <Animated.View
-            key={index}
+            key={`confetti-${index}`}
             style={[
               styles.confetti,
               {
@@ -219,7 +278,7 @@ export const Confetti = ({ visible, duration = 2000 }: ConfettiProps) => {
                   { translateY },
                   { rotate },
                 ],
-                opacity: opacityRefs.current[index],
+                opacity: opacityValue,
                 ...shapeStyle,
               },
             ]}

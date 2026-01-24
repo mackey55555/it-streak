@@ -308,10 +308,13 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
+    backgroundColor: colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   closeButton: {
     width: 40,
@@ -335,10 +338,12 @@ const styles = StyleSheet.create({
   questionCard: {
     marginBottom: spacing.xl,
     minHeight: 120,
+    padding: spacing.xl,
   },
   questionText: {
     fontSize: 18,
     lineHeight: 28,
+    color: colors.text,
   },
   choicesContainer: {
     gap: spacing.md,
@@ -349,6 +354,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: borderRadius.md,
     padding: spacing.lg,
+    minHeight: 64, // タップ領域を確保
   },
   choiceSelected: {
     backgroundColor: colors.primary + '10',
@@ -356,35 +362,38 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   choiceCorrect: {
-    backgroundColor: colors.correct + '15',
+    backgroundColor: colors.correct + '20',
     borderColor: colors.correct,
-    borderWidth: 2,
+    borderWidth: 3,
   },
   choiceIncorrect: {
-    backgroundColor: colors.incorrect + '15',
+    backgroundColor: colors.incorrect + '20',
     borderColor: colors.incorrect,
-    borderWidth: 2,
+    borderWidth: 3,
   },
   choiceText: {
     fontSize: 16,
     lineHeight: 24,
+    color: colors.text,
   },
   choiceTextSelected: {
     fontWeight: '600',
   },
   footer: {
-    padding: spacing.lg,
+    padding: spacing.xl,
     backgroundColor: colors.background,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+    paddingBottom: spacing.xl + 10, // SafeArea分の余白
   },
   actionButton: {
     width: '100%',
   },
   resultBanner: {
     borderRadius: borderRadius.md,
-    padding: spacing.lg,
+    padding: spacing.xl,
     marginBottom: spacing.md,
+    minHeight: 80,
   },
   resultCorrect: {
     backgroundColor: colors.correct,
@@ -408,9 +417,11 @@ const styles = StyleSheet.create({
   resultTitle: {
     color: colors.background,
     fontWeight: 'bold',
+    fontSize: 20,
   },
   explanation: {
     color: colors.background,
-    lineHeight: 22,
+    lineHeight: 24,
+    fontSize: 15,
   },
 });

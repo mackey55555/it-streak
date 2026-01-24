@@ -12,6 +12,8 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -151,13 +153,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   input: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     borderWidth: 2,
     borderColor: colors.border,
     borderRadius: borderRadius.md,
     padding: spacing.lg,
     fontSize: fontSizes.md,
     color: colors.text,
+    minHeight: 52,
+  },
+  inputFocused: {
+    borderColor: colors.primary,
+    backgroundColor: colors.background,
   },
   errorContainer: {
     padding: spacing.md,

@@ -1,7 +1,7 @@
 import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Button, Card, ProgressBar, Text, SkeletonCard } from '../../components/ui';
+import { Button, Card, ProgressBar, Text, StreakCardSkeleton, ProgressCardSkeleton } from '../../components/ui';
 import { colors, spacing, borderRadius } from '../../constants/theme';
 import { useStreak } from '../../hooks/useStreak';
 import { useDailyProgress } from '../../hooks/useDailyProgress';
@@ -83,67 +83,66 @@ export default function HomeScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
-        {loading && !currentStreak ? (
-          <View style={styles.loadingContainer}>
-            <SkeletonCard />
-            <SkeletonCard />
-          </View>
-        ) : (
-          <>
-            {/* ストリーク表示 */}
-            <Animated.View
-              style={[
-                styles.streakCardWrapper,
-                {
-                  transform: [
-                    { scale: streakScale },
-                  ],
-                },
-              ]}
-            >
-              <Card style={styles.streakCard}>
-                <View style={styles.streakContent}>
-                  <Animated.View
-                    style={{
-                      transform: [{ scale: streakPulse }],
-                    }}
-                  >
-                    <Text variant="h1" style={styles.streakEmoji}>🔥</Text>
-                  </Animated.View>
-                  <View style={styles.streakTextContainer}>
-                    <Text variant="h2" style={styles.streakNumber}>{currentStreak}</Text>
-                    <Text variant="body" color={colors.textLight}>日連続！</Text>
-                  </View>
+        {/* ストリーク表示 */}
+        <Animated.View
+          style={[
+            styles.streakCardWrapper,
+            {
+              transform: [
+                { scale: streakScale },
+              ],
+            },
+          ]}
+        >
+          {streakLoading ? (
+            <StreakCardSkeleton />
+          ) : (
+            <Card style={styles.streakCard}>
+              <View style={styles.streakContent}>
+                <Animated.View
+                  style={{
+                    transform: [{ scale: streakPulse }],
+                  }}
+                >
+                  <Text variant="h1" style={styles.streakEmoji}>🔥</Text>
+                </Animated.View>
+                <View style={styles.streakTextContainer}>
+                  <Text variant="h2" style={styles.streakNumber}>{currentStreak}</Text>
+                  <Text variant="body" color={colors.textLight}>日連続！</Text>
                 </View>
-              </Card>
-            </Animated.View>
-
-            {/* 今日の進捗カード */}
-            <Card style={[
-              styles.progressCard,
-              isGoalCompleted && styles.progressCardCompleted
-            ]}>
-              <Text variant="h3" style={styles.progressTitle}>今日の進捗</Text>
-              <View style={styles.progressInfo}>
-                <Text variant="h2" style={styles.progressText}>
-                  {todayProgress.answered} / {dailyGoal} 問
-                </Text>
               </View>
-              <ProgressBar 
-                progress={progressPercentage / 100} 
-                style={styles.progressBar}
-              />
-              {isGoalCompleted ? (
-                <Text variant="caption" style={styles.progressCaption}>
-                  🎉 今日の目標達成！素晴らしい！
-                </Text>
-              ) : (
-                <Text variant="caption" style={styles.progressCaption}>
-                  あと{remaining}問で今日の目標達成！
-                </Text>
-              )}
             </Card>
-          </>
+          )}
+        </Animated.View>
+
+        {/* 今日の進捗カード */}
+        {progressLoading ? (
+          <ProgressCardSkeleton />
+        ) : (
+          <Card style={[
+            styles.progressCard,
+            isGoalCompleted && styles.progressCardCompleted
+          ]}>
+            <Text variant="h3" style={styles.progressTitle}>今日の進捗</Text>
+            <View style={styles.progressInfo}>
+              <Text variant="h2" style={styles.progressText}>
+                {todayProgress.answered} / {dailyGoal} 問
+              </Text>
+            </View>
+            <ProgressBar 
+              progress={progressPercentage / 100} 
+              style={styles.progressBar}
+            />
+            {isGoalCompleted ? (
+              <Text variant="caption" style={styles.progressCaption}>
+                🎉 今日の目標達成！素晴らしい！
+              </Text>
+            ) : (
+              <Text variant="caption" style={styles.progressCaption}>
+                あと{remaining}問で今日の目標達成！
+              </Text>
+            )}
+          </Card>
         )}
 
         {/* 学習開始ボタン */}
@@ -200,23 +199,21 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.lg,
-    paddingBottom: spacing.xxl,
-  },
-  loadingContainer: {
-    padding: spacing.xxl,
-    alignItems: 'center',
+    paddingBottom: spacing.xxl + 20, // タブバーの高さ分の余白を追加
   },
   streakCardWrapper: {
     marginBottom: spacing.lg,
   },
   streakCard: {
     backgroundColor: colors.streak,
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    borderWidth: 0,
   },
   streakContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing.md,
   },
   streakEmoji: {
     fontSize: 48,
@@ -227,24 +224,30 @@ const styles = StyleSheet.create({
   },
   streakNumber: {
     color: colors.background,
-    fontSize: 36,
-    lineHeight: 40,
+    fontSize: 40,
+    lineHeight: 44,
+    fontWeight: 'bold',
   },
   progressCard: {
     marginBottom: spacing.xl,
+    padding: spacing.xl,
   },
   progressCardCompleted: {
     borderWidth: 2,
     borderColor: colors.primary,
+    backgroundColor: colors.primary + '05',
   },
   progressTitle: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
+    fontWeight: '600',
   },
   progressInfo: {
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
   },
   progressText: {
     color: colors.primary,
+    fontSize: 24,
+    fontWeight: 'bold',
   },
   progressBar: {
     marginVertical: spacing.md,
@@ -255,6 +258,7 @@ const styles = StyleSheet.create({
   },
   startButton: {
     marginBottom: spacing.xl,
+    marginTop: spacing.md,
   },
   menuSection: {
     gap: spacing.md,
@@ -266,6 +270,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     padding: spacing.lg,
     borderRadius: borderRadius.md,
+    minHeight: 64, // タップ領域を確保
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   menuContent: {
     flex: 1,
@@ -273,6 +280,7 @@ const styles = StyleSheet.create({
   },
   menuDescription: {
     marginTop: spacing.xs,
+    color: colors.textLight,
   },
 });
 

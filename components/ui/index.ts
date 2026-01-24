@@ -6,4 +6,6 @@ export { Confetti } from './Confetti';
 export { ErrorView } from './ErrorView';
 export { Skeleton } from './Skeleton';
 export { SkeletonCard } from './SkeletonCard';
+export { StreakCardSkeleton } from './StreakCardSkeleton';
+export { ProgressCardSkeleton } from './ProgressCardSkeleton';
 

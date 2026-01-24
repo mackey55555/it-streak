@@ -21,6 +21,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     borderRadius: borderRadius.lg,
     ...shadows.md,
+    overflow: 'hidden', // 見切れ防止
   },
   padding: {
     padding: spacing.lg,

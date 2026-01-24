@@ -27,26 +27,46 @@ export default function ResultScreen() {
     // 前回のストリークを保存（ストリーク継続判定用）
     setPreviousStreak(currentStreak);
 
+    // アニメーション値をリセット
+    cardScale.setValue(0);
+    scoreOpacity.setValue(0);
+
     // アニメーション開始
-    Animated.parallel([
-      Animated.spring(cardScale, {
-        toValue: 1,
-        tension: 50,
-        friction: 7,
-        useNativeDriver: true,
-      }),
-      Animated.timing(scoreOpacity, {
-        toValue: 1,
-        duration: 800,
-        delay: 300,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    const cardAnimation = Animated.spring(cardScale, {
+      toValue: 1,
+      tension: 50,
+      friction: 7,
+      useNativeDriver: true,
+    });
+
+    const scoreAnimation = Animated.timing(scoreOpacity, {
+      toValue: 1,
+      duration: 800,
+      delay: 300,
+      useNativeDriver: true,
+    });
+
+    const parallelAnimation = Animated.parallel([cardAnimation, scoreAnimation]);
+    parallelAnimation.start();
 
     // 高得点の場合は紙吹雪を表示
+    let confettiTimeout: NodeJS.Timeout | null = null;
     if (percentage >= 80) {
-      setTimeout(() => setShowConfetti(true), 500);
+      confettiTimeout = setTimeout(() => setShowConfetti(true), 500);
     }
+
+    return () => {
+      if (confettiTimeout) {
+        clearTimeout(confettiTimeout);
+      }
+      try {
+        parallelAnimation.stop();
+        cardAnimation.stop();
+        scoreAnimation.stop();
+      } catch (e) {
+        // エラーを無視
+      }
+    };
   }, []);
 
   const getMessage = () => {
@@ -154,13 +174,18 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: spacing.xl,
     justifyContent: 'center',
+    paddingBottom: spacing.xxl,
   },
   resultCardWrapper: {
     marginBottom: spacing.xl,
+    marginTop: spacing.md, // 上部マージンを追加
   },
   resultCard: {
     alignItems: 'center',
-    paddingVertical: spacing.xxl,
+    paddingTop: spacing.xxl + spacing.lg, // 上部のパディングを増やす
+    paddingBottom: spacing.xxl,
+    paddingHorizontal: spacing.xl,
+    overflow: 'visible' as any, // 見切れ防止（Cardコンポーネントのoverflow: hiddenを上書き）
   },
   emoji: {
     fontSize: 64,
@@ -172,20 +197,26 @@ const styles = StyleSheet.create({
   },
   scoreContainer: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    alignItems: 'center', // baselineからcenterに変更
+    justifyContent: 'center',
+    marginTop: spacing.md, // 上部マージンを追加
     marginBottom: spacing.sm,
+    minHeight: 70, // 最小高さを確保
   },
   score: {
     fontSize: 56,
     color: colors.primary,
     fontWeight: 'bold',
+    lineHeight: 64, // 行の高さを明示的に設定
   },
   scoreDivider: {
     marginHorizontal: spacing.sm,
     color: colors.textLight,
+    lineHeight: 64, // スコアと同じ行の高さに合わせる
   },
   totalScore: {
     color: colors.textLight,
+    lineHeight: 40, // 適切な行の高さ
   },
   percentage: {
     marginTop: spacing.sm,

@@ -296,21 +296,24 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.xxl + 20, // タブバーの高さ分の余白を追加
   },
   header: {
-    marginBottom: spacing.xl,
+    marginBottom: spacing.xxl,
     color: colors.text,
+    fontWeight: 'bold',
   },
   section: {
-    marginBottom: spacing.xl,
+    marginBottom: spacing.xxl,
   },
   sectionTitle: {
-    marginBottom: spacing.md,
-    color: colors.textLight,
+    marginBottom: spacing.lg,
+    color: colors.text,
+    fontWeight: '600',
+    fontSize: fontSizes.lg,
   },
   card: {
-    padding: spacing.lg,
+    padding: spacing.xl,
   },
   infoRow: {
     flexDirection: 'row',
@@ -320,6 +323,8 @@ const styles = StyleSheet.create({
   },
   infoValue: {
     fontWeight: '600',
+    fontSize: fontSizes.md,
+    color: colors.text,
   },
   goalContainer: {
     marginBottom: spacing.lg,
@@ -329,7 +334,8 @@ const styles = StyleSheet.create({
   },
   goalLabel: {
     fontWeight: '600',
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
+    fontSize: fontSizes.md,
   },
   goalInputContainer: {
     flexDirection: 'row',
@@ -346,6 +352,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     width: 80,
+    minHeight: 48,
     color: colors.text,
   },
   goalUnit: {
@@ -361,6 +368,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     padding: spacing.lg,
     borderRadius: borderRadius.md,
+    minHeight: 64, // タップ領域を確保
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   logoutButton: {
     marginTop: spacing.lg,
@@ -380,7 +390,8 @@ const styles = StyleSheet.create({
   },
   notificationLabel: {
     fontWeight: '600',
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
+    fontSize: fontSizes.md,
   },
   divider: {
     height: 1,
@@ -395,7 +406,8 @@ const styles = StyleSheet.create({
   },
   timeLabel: {
     fontWeight: '600',
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
+    fontSize: fontSizes.md,
   },
   timeInputContainer: {
     flexDirection: 'row',
@@ -412,6 +424,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     width: 100,
+    minHeight: 48,
     color: colors.text,
   },
   timeSaveButton: {

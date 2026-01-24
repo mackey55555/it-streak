@@ -13,6 +13,9 @@ export default function SignupScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
+  const [confirmPasswordFocused, setConfirmPasswordFocused] = useState(false);
 
   const handleSignup = async () => {
     if (!email || !password || !confirmPassword) {
@@ -183,13 +186,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   input: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.surface,
     borderWidth: 2,
     borderColor: colors.border,
     borderRadius: borderRadius.md,
     padding: spacing.lg,
     fontSize: fontSizes.md,
     color: colors.text,
+    minHeight: 52,
+  },
+  inputFocused: {
+    borderColor: colors.primary,
+    backgroundColor: colors.background,
   },
   errorContainer: {
     padding: spacing.md,
