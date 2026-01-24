@@ -33,10 +33,25 @@ export const useQuiz = (questionCount: number = 5) => {
       setLoading(true);
       setError(null);
 
+      // まず問題数を取得
+      let countQuery = supabase
+        .from('questions')
+        .select('*', { count: 'exact', head: true });
+
+      if (categoryId) {
+        countQuery = countQuery.eq('category_id', categoryId);
+      }
+
+      const { count, error: countError } = await countQuery;
+      if (countError) throw countError;
+
+      // 全問題を取得（または十分な数）
+      const limit = count ? Math.min(count, 1000) : 1000; // 最大1000問まで取得
+
       let query = supabase
         .from('questions')
         .select('*')
-        .limit(questionCount * 2); // 多めに取得してランダム選択
+        .limit(limit);
 
       if (categoryId) {
         query = query.eq('category_id', categoryId);
@@ -93,12 +108,11 @@ export const useQuiz = (questionCount: number = 5) => {
       // 問題IDのリストを作成（重複を排除）
       const questionIds = Array.from(new Set(incorrectAnswers.map(a => a.question_id)));
 
-      // 該当する問題を取得
+      // 該当する問題を取得（間違えた問題のIDリストから取得するため、limitは不要）
       const { data: questionsData, error: questionsError } = await supabase
         .from('questions')
         .select('*')
-        .in('id', questionIds)
-        .limit(questionCount * 2); // 多めに取得してランダム選択
+        .in('id', questionIds);
 
       if (questionsError) throw questionsError;
 
