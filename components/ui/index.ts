@@ -10,4 +10,6 @@ export { StreakCardSkeleton } from './StreakCardSkeleton';
 export { ProgressCardSkeleton } from './ProgressCardSkeleton';
 export { LineChart } from './LineChart';
 export { MonthlyCalendar } from './MonthlyCalendar';
+export { Character } from './Character';
+export type { CharacterType } from './Character';
 

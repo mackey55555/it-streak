@@ -5,6 +5,15 @@ import { useAuth } from './useAuth';
 
 type DailyProgress = Database['public']['Tables']['daily_progress']['Row'];
 
+// ローカル時間で今日の日付をYYYY-MM-DD形式で取得
+const getTodayLocal = (): string => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const useDailyProgress = () => {
   const { user, loading: authLoading } = useAuth();
   const [progress, setProgress] = useState<DailyProgress | null>(null);
@@ -21,7 +30,7 @@ export const useDailyProgress = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('ユーザーが認証されていません');
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = getTodayLocal();
 
       // プロフィールから目標を取得
       const { data: profile } = await supabase
@@ -61,7 +70,7 @@ export const useDailyProgress = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('ユーザーが認証されていません');
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = getTodayLocal();
 
       // 現在の進捗を取得
       const { data: currentProgress } = await supabase
@@ -123,6 +132,24 @@ export const useDailyProgress = () => {
       fetchTodayProgress();
     }
   }, [user, authLoading]);
+
+  // 日付変更を検知して自動的に再取得
+  useEffect(() => {
+    if (!user) return;
+
+    let lastCheckedDate = getTodayLocal();
+    
+    // 1分ごとに日付をチェック
+    const interval = setInterval(() => {
+      const today = getTodayLocal();
+      if (today !== lastCheckedDate) {
+        lastCheckedDate = today;
+        fetchTodayProgress();
+      }
+    }, 60000); // 1分ごと
+
+    return () => clearInterval(interval);
+  }, [user]);
 
   return {
     todayProgress: {

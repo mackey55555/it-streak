@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Anim
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Button, Card, ProgressBar, Text, ErrorView, Skeleton } from '../../components/ui';
+import { Button, Card, ProgressBar, Text, ErrorView, Skeleton, Character } from '../../components/ui';
 import { Confetti } from '../../components/ui/Confetti';
 import { colors, spacing, borderRadius } from '../../constants/theme';
 import { useQuiz } from '../../hooks/useQuiz';
@@ -286,9 +286,12 @@ export default function QuizScreen() {
               ]}
             >
               <View style={styles.resultContent}>
-                <Text variant="h2" style={styles.resultIcon}>
-                  {answerState === 'correct' ? '✓' : '✕'}
-                </Text>
+                <Character
+                  type={answerState === 'correct' ? 'correct' : 'incorrect'}
+                  size="medium"
+                  animated={true}
+                  style={styles.characterInBanner}
+                />
                 <View style={styles.resultTextContainer}>
                   <Text variant="h3" style={styles.resultTitle}>
                     {answerState === 'correct' ? '正解！' : '不正解'}
@@ -445,6 +448,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing.md,
+  },
+  characterInBanner: {
+    marginRight: spacing.sm,
   },
   resultIcon: {
     fontSize: 32,

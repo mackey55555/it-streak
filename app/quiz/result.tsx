@@ -2,7 +2,7 @@ import { View, StyleSheet, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Button, Card, Text, Confetti } from '../../components/ui';
+import { Button, Card, Text, Confetti, Character } from '../../components/ui';
 import { colors, spacing, borderRadius } from '../../constants/theme';
 import { useStreak } from '../../hooks/useStreak';
 import { useEffect, useState, useRef } from 'react';
@@ -71,10 +71,10 @@ export default function ResultScreen() {
   }, []);
 
   const getMessage = () => {
-    if (percentage >= 80) return { icon: 'trophy', text: '素晴らしい！', color: colors.secondary };
-    if (percentage >= 60) return { icon: 'thumbs-up', text: 'いい調子！', color: colors.primary };
-    if (percentage >= 40) return { icon: 'fitness', text: 'もう少し！', color: colors.streak };
-    return { icon: 'book', text: '復習しよう！', color: colors.textLight };
+    if (percentage >= 80) return { icon: 'trophy', text: '素晴らしい！', color: colors.secondary, characterType: 'result-high' as const, characterSize: 'large' as const };
+    if (percentage >= 60) return { icon: 'thumbs-up', text: 'いい調子！', color: colors.primary, characterType: 'result-good' as const, characterSize: 'medium' as const };
+    if (percentage >= 40) return { icon: 'fitness', text: 'もう少し！', color: colors.streak, characterType: 'result-medium' as const, characterSize: 'medium' as const };
+    return { icon: 'book', text: '復習しよう！', color: colors.textLight, characterType: 'result-low' as const, characterSize: 'medium' as const };
   };
 
   const message = getMessage();
@@ -109,7 +109,12 @@ export default function ResultScreen() {
         >
           <Card style={styles.resultCard}>
           <View style={styles.iconContainer}>
-            <Ionicons name={message.icon as any} size={64} color={message.color} />
+            <Character
+              type={message.characterType}
+              size={message.characterSize}
+              animated={true}
+              style={styles.characterIcon}
+            />
           </View>
           <Text variant="h2" style={[styles.message, { color: message.color }]}>{message.text}</Text>
           
@@ -141,6 +146,12 @@ export default function ResultScreen() {
           {/* ストリーク継続メッセージ */}
           {streakMessage && (
             <View style={styles.streakMessageContainer}>
+              <Character
+                type="streak-celebration"
+                size="small"
+                animated={true}
+                style={styles.streakCharacter}
+              />
               <Ionicons name="flame" size={20} color={colors.streak} style={styles.streakIcon} />
               <Text variant="body" style={styles.streakMessage}>
                 {streakMessage}
@@ -194,6 +205,14 @@ const styles = StyleSheet.create({
   emoji: {
     fontSize: 64,
     marginBottom: spacing.md,
+  },
+  iconContainer: {
+    marginBottom: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  characterIcon: {
+    marginBottom: spacing.xs,
   },
   message: {
     marginBottom: spacing.xl,
@@ -252,6 +271,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  streakCharacter: {
+    marginRight: spacing.xs,
   },
   streakIcon: {
     marginRight: spacing.xs,

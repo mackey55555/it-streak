@@ -5,6 +5,15 @@ import { useAuth } from './useAuth';
 
 type Streak = Database['public']['Tables']['streaks']['Row'];
 
+// ローカル時間で今日の日付をYYYY-MM-DD形式で取得
+const getTodayLocal = (): string => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const useStreak = () => {
   const { user, loading: authLoading } = useAuth();
   const [streak, setStreak] = useState<Streak | null>(null);
@@ -46,7 +55,7 @@ export const useStreak = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('ユーザーが認証されていません');
 
-      const today = new Date().toISOString().split('T')[0];
+      const today = getTodayLocal();
 
       // 現在のストリーク情報を取得
       const { data: currentStreak } = await supabase
@@ -82,7 +91,10 @@ export const useStreak = () => {
       // 前回の日付を確認
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      const year = yesterday.getFullYear();
+      const month = String(yesterday.getMonth() + 1).padStart(2, '0');
+      const day = String(yesterday.getDate()).padStart(2, '0');
+      const yesterdayStr = `${year}-${month}-${day}`;
 
       let newCurrentStreak: number;
       
@@ -131,6 +143,24 @@ export const useStreak = () => {
       fetchStreak();
     }
   }, [user, authLoading]);
+
+  // 日付変更を検知して自動的に再取得
+  useEffect(() => {
+    if (!user) return;
+
+    let lastCheckedDate = getTodayLocal();
+    
+    // 1分ごとに日付をチェック
+    const interval = setInterval(() => {
+      const today = getTodayLocal();
+      if (today !== lastCheckedDate) {
+        lastCheckedDate = today;
+        fetchStreak();
+      }
+    }, 60000); // 1分ごと
+
+    return () => clearInterval(interval);
+  }, [user]);
 
   return {
     currentStreak: streak?.current_streak ?? 0,

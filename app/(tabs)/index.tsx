@@ -2,7 +2,7 @@ import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Refr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Button, Card, ProgressBar, Text, StreakCardSkeleton, ProgressCardSkeleton } from '../../components/ui';
+import { Button, Card, ProgressBar, Text, StreakCardSkeleton, ProgressCardSkeleton, Character } from '../../components/ui';
 import { colors, spacing, borderRadius } from '../../constants/theme';
 import { useStreak } from '../../hooks/useStreak';
 import { useDailyProgress } from '../../hooks/useDailyProgress';
@@ -69,11 +69,42 @@ export default function HomeScreen() {
     }
   }, [user, fetchSelectedExam]);
 
-  // 画面がフォーカスされたときに試験を再取得
+  // 最後にチェックした日付を保存（ちらつきを防ぐため）
+  const lastCheckedDateRef = useRef<string | null>(null);
+  const refetchFunctionsRef = useRef({ refetchStreak, refetchProgress, fetchWeeklyProgress });
+  
+  // refetch関数の参照を更新（依存配列を最適化するため）
+  useEffect(() => {
+    refetchFunctionsRef.current = { refetchStreak, refetchProgress, fetchWeeklyProgress };
+  }, [refetchStreak, refetchProgress, fetchWeeklyProgress]);
+
+  // 画面がフォーカスされたときに試験を再取得し、日付変更をチェック
   useFocusEffect(
     useCallback(() => {
       if (user) {
         fetchSelectedExam();
+        
+        // 日付が変わったかチェック（フォーカス時のみ、ちらつきを防ぐため）
+        const getTodayLocal = (): string => {
+          const today = new Date();
+          const year = today.getFullYear();
+          const month = String(today.getMonth() + 1).padStart(2, '0');
+          const day = String(today.getDate()).padStart(2, '0');
+          return `${year}-${month}-${day}`;
+        };
+        
+        const today = getTodayLocal();
+        const lastChecked = lastCheckedDateRef.current;
+        
+        // 日付が変わった場合のみ再取得（ちらつきを防ぐ）
+        if (lastChecked && lastChecked !== today) {
+          refetchFunctionsRef.current.refetchStreak();
+          refetchFunctionsRef.current.refetchProgress();
+          refetchFunctionsRef.current.fetchWeeklyProgress();
+        }
+        
+        // 最後にチェックした日付を更新
+        lastCheckedDateRef.current = today;
       }
     }, [user, fetchSelectedExam])
   );
@@ -115,7 +146,7 @@ export default function HomeScreen() {
   }, [currentStreak]);
 
   // 今週の学習データを取得
-  const fetchWeeklyProgress = async () => {
+  const fetchWeeklyProgress = useCallback(async () => {
     if (!user) return;
     
     setWeeklyLoading(true);
@@ -168,13 +199,51 @@ export default function HomeScreen() {
     } finally {
       setWeeklyLoading(false);
     }
-  };
+  }, [user]);
 
+  // ユーザーが設定されたときに週間データを取得
   useEffect(() => {
     if (user) {
       fetchWeeklyProgress();
     }
+  }, [user, fetchWeeklyProgress]);
+
+  // 日付変更を検知して自動的に再取得
+  useEffect(() => {
+    if (!user) return;
+
+    // ローカル時間で今日の日付を取得
+    const getTodayLocal = (): string => {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    // 初期化時に日付を設定
+    if (!lastCheckedDateRef.current) {
+      lastCheckedDateRef.current = getTodayLocal();
+    }
+    
+    let lastCheckedDate = lastCheckedDateRef.current;
+    
+    // 1分ごとに日付をチェック
+    const interval = setInterval(() => {
+      const today = getTodayLocal();
+      if (today !== lastCheckedDate) {
+        lastCheckedDate = today;
+        lastCheckedDateRef.current = today;
+        // 日付が変わったら、ストリーク、進捗、週間データをすべて再取得
+        refetchFunctionsRef.current.refetchStreak();
+        refetchFunctionsRef.current.refetchProgress();
+        refetchFunctionsRef.current.fetchWeeklyProgress();
+      }
+    }, 60000); // 1分ごと
+
+    return () => clearInterval(interval);
   }, [user]);
+
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -275,7 +344,7 @@ export default function HomeScreen() {
                     transform: [{ scale: streakPulse }],
                   }}
                 >
-                  <Ionicons name="flame" size={48} color={colors.background} />
+                  <Ionicons name="flame" size={40} color={colors.background} />
                 </Animated.View>
                 <View style={styles.streakTextContainer}>
                   <Text variant="h2" style={styles.streakNumber}>{currentStreak}</Text>
@@ -294,7 +363,15 @@ export default function HomeScreen() {
             styles.progressCard,
             isGoalCompleted && styles.progressCardCompleted
           ]}>
-            <Text variant="h3" style={styles.progressTitle}>今日の進捗</Text>
+            <View style={styles.progressHeader}>
+              <Text variant="h3" style={styles.progressTitle}>今日の進捗</Text>
+              <Character
+                type={isGoalCompleted ? 'progress-complete' : 'progress-ongoing'}
+                size="small"
+                animated={isGoalCompleted}
+                style={[styles.progressCharacter, { width: 70, height: 85 }]}
+              />
+            </View>
             <View style={styles.progressInfo}>
               <Text variant="h2" style={styles.progressText}>
                 {todayProgress.answered} / {dailyGoal} 問
@@ -456,7 +533,7 @@ const styles = StyleSheet.create({
   },
   streakCard: {
     backgroundColor: colors.streak,
-    paddingVertical: spacing.xl,
+    paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     borderWidth: 0,
   },
@@ -488,19 +565,29 @@ const styles = StyleSheet.create({
   },
   progressCard: {
     marginBottom: spacing.xl,
-    padding: spacing.xl,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
   },
   progressCardCompleted: {
     borderWidth: 2,
     borderColor: colors.primary,
     backgroundColor: colors.primary + '05',
   },
+  progressHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
   progressTitle: {
-    marginBottom: spacing.lg,
     fontWeight: '600',
+    flex: 1,
+  },
+  progressCharacter: {
+    marginLeft: spacing.md,
   },
   progressInfo: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   progressText: {
     color: colors.primary,
@@ -508,7 +595,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   progressBar: {
-    marginVertical: spacing.md,
+    marginVertical: spacing.sm,
     height: 16,
   },
   progressCaptionRow: {
