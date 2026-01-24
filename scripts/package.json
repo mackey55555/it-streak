@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "seed": "tsx seed-questions.ts"
+    "seed": "tsx seed-questions.ts",
+    "merge": "tsx merge-questions.ts"
   },
   "devDependencies": {
+    "dotenv": "^17.2.3",
     "tsx": "^4.7.0"
   }
 }
-
