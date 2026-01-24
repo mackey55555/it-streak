@@ -2,7 +2,7 @@ import { ExpoConfig, ConfigContext } from 'expo/config';
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: 'quizapp',
+  name: 'it-streak',
   slug: 'quizapp',
   version: '1.0.0',
   orientation: 'portrait',
@@ -11,19 +11,22 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   splash: {
     image: './assets/splash-icon.png',
     resizeMode: 'contain',
-    backgroundColor: '#58CC02',
+    backgroundColor: '#FEFCF9',
   },
   assetBundlePatterns: ['**/*'],
   ios: {
     supportsTablet: true,
-    bundleIdentifier: 'com.yourcompany.quizapp',
+    bundleIdentifier: 'jp.auris.quizapp',
+    infoPlist: {
+      ITSAppUsesNonExemptEncryption: false,
+    },
   },
   android: {
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
-      backgroundColor: '#ffffff',
+      backgroundColor: '#FEFCF9',
     },
-    package: 'com.yourcompany.quizapp',
+    package: 'jp.auris.quizapp',
   },
   web: {
     favicon: './assets/favicon.png',
@@ -34,7 +37,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       'expo-notifications',
       {
         icon: './assets/notification-icon.png',
-        color: '#58CC02',
+        color: '#7A8A70',
         sounds: [],
       },
     ],
@@ -44,7 +47,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
     supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
     eas: {
-      projectId: process.env.EXPO_PUBLIC_PROJECT_ID,
+      projectId: process.env.EXPO_PUBLIC_PROJECT_ID || '85460826-6e7d-4356-a9cf-9fc93a6704d2',
     },
   },
 });
