@@ -1,4 +1,4 @@
-import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Animated } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Animated, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -136,6 +136,45 @@ export default function HomeScreen() {
 
   const handleStartLearning = () => {
     router.push('/quiz');
+  };
+
+  const handleRandomChallenge = () => {
+    router.push({
+      pathname: '/quiz',
+      params: { mode: 'random' }
+    });
+  };
+
+  const handleReviewIncorrect = async () => {
+    if (!user) return;
+
+    try {
+      // 間違えた問題があるか確認
+      const { count, error } = await supabase
+        .from('user_answers')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('is_correct', false);
+
+      if (error) throw error;
+
+      if (!count || count === 0) {
+        Alert.alert(
+          '復習問題なし',
+          'まだ間違えた問題がありません。\n問題を解いてから復習機能をご利用ください。'
+        );
+        return;
+      }
+
+      // クイズ画面に遷移（復習モード）
+      router.push({
+        pathname: '/quiz',
+        params: { mode: 'review' }
+      });
+    } catch (error: any) {
+      Alert.alert('エラー', 'データの取得に失敗しました');
+      console.error('Error checking incorrect questions:', error);
+    }
   };
 
   const loading = streakLoading || progressLoading;
@@ -280,7 +319,11 @@ export default function HomeScreen() {
 
         {/* サブメニュー */}
         <View style={styles.menuSection}>
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => router.push('/quiz/category-select')}
+            activeOpacity={0.7}
+          >
             <View style={styles.menuContent}>
               <View style={styles.menuTitleRow}>
                 <Ionicons name="library-outline" size={20} color={colors.primary} style={styles.menuIcon} />
@@ -293,7 +336,11 @@ export default function HomeScreen() {
             <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={handleReviewIncorrect}
+            activeOpacity={0.7}
+          >
             <View style={styles.menuContent}>
               <View style={styles.menuTitleRow}>
                 <Ionicons name="refresh-outline" size={20} color={colors.primary} style={styles.menuIcon} />
@@ -306,7 +353,11 @@ export default function HomeScreen() {
             <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={handleRandomChallenge}
+            activeOpacity={0.7}
+          >
             <View style={styles.menuContent}>
               <View style={styles.menuTitleRow}>
                 <Ionicons name="shuffle-outline" size={20} color={colors.primary} style={styles.menuIcon} />

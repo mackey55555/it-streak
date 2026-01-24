@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, ProgressBar, Text, ErrorView, Skeleton } from '../../components/ui';
 import { Confetti } from '../../components/ui/Confetti';
@@ -14,6 +14,7 @@ type AnswerState = 'unanswered' | 'correct' | 'incorrect';
 
 export default function QuizScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ mode?: string; categoryId?: string }>();
   const { 
     currentQuestion, 
     currentIndex, 
@@ -23,6 +24,7 @@ export default function QuizScreen() {
     loading, 
     error,
     fetchQuestions,
+    fetchIncorrectQuestions,
     submitAnswer,
     nextQuestion,
   } = useQuiz(5);
@@ -38,8 +40,19 @@ export default function QuizScreen() {
 
   // 初回読み込み
   useEffect(() => {
-    fetchQuestions();
-  }, []);
+    // パラメータに応じて問題を取得
+    if (params.mode === 'review') {
+      // 苦手な問題を復習
+      fetchIncorrectQuestions();
+    } else if (params.categoryId) {
+      // 分野別に学習
+      fetchQuestions(params.categoryId);
+    } else {
+      // ランダムチャレンジまたは通常の学習
+      fetchQuestions();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.categoryId, params.mode]);
 
   // クイズ終了時
   useEffect(() => {
@@ -165,10 +178,24 @@ export default function QuizScreen() {
   }
 
   // 問題がない場合
-  if (!currentQuestion) {
+  if (!currentQuestion && !loading) {
+    const errorMessage = params.categoryId 
+      ? 'この分野には問題が登録されていません'
+      : params.mode === 'review'
+      ? '復習する問題がありません'
+      : '問題がありません';
+    
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <Text variant="h3">問題がありません</Text>
+        <Ionicons name="alert-circle-outline" size={48} color={colors.textLight} style={styles.errorIcon} />
+        <Text variant="h3" style={styles.errorTitle}>{errorMessage}</Text>
+        <Text variant="body" color={colors.textLight} style={styles.errorDescription}>
+          {params.categoryId 
+            ? '他の分野を選択するか、後でもう一度お試しください。'
+            : params.mode === 'review'
+            ? '問題を解いてから復習機能をご利用ください。'
+            : 'しばらくしてからもう一度お試しください。'}
+        </Text>
         <Button title="戻る" onPress={handleClose} style={styles.errorButton} />
       </SafeAreaView>
     );
@@ -302,6 +329,18 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: spacing.md,
+  },
+  errorIcon: {
+    marginBottom: spacing.lg,
+  },
+  errorTitle: {
+    marginBottom: spacing.md,
+    textAlign: 'center',
+  },
+  errorDescription: {
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+    paddingHorizontal: spacing.lg,
   },
   errorFooter: {
     padding: spacing.lg,

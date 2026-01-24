@@ -4,6 +4,11 @@ import { Database } from '../types/database';
 
 type Question = Database['public']['Tables']['questions']['Row'];
 
+interface IncorrectQuestion {
+  question_id: string;
+  last_answered_at: string;
+}
+
 interface QuizResult {
   questionId: string;
   selectedAnswer: 'A' | 'B' | 'C' | 'D';
@@ -55,6 +60,62 @@ export const useQuiz = (questionCount: number = 5) => {
     } catch (err: any) {
       setError(err.message);
       console.error('Error fetching questions:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 間違えた問題を取得
+  const fetchIncorrectQuestions = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('ユーザーが認証されていません');
+      }
+
+      // 各問題について最新の回答のみを取得（間違えたもの）
+      const { data: incorrectAnswers, error: answersError } = await supabase
+        .from('user_answers')
+        .select('question_id, answered_at')
+        .eq('user_id', user.id)
+        .eq('is_correct', false)
+        .order('answered_at', { ascending: false });
+
+      if (answersError) throw answersError;
+
+      if (!incorrectAnswers || incorrectAnswers.length === 0) {
+        throw new Error('復習する問題がありません');
+      }
+
+      // 問題IDのリストを作成（重複を排除）
+      const questionIds = Array.from(new Set(incorrectAnswers.map(a => a.question_id)));
+
+      // 該当する問題を取得
+      const { data: questionsData, error: questionsError } = await supabase
+        .from('questions')
+        .select('*')
+        .in('id', questionIds)
+        .limit(questionCount * 2); // 多めに取得してランダム選択
+
+      if (questionsError) throw questionsError;
+
+      if (!questionsData || questionsData.length === 0) {
+        throw new Error('問題が見つかりませんでした');
+      }
+
+      // ランダムに選択
+      const shuffled = questionsData.sort(() => Math.random() - 0.5);
+      const selected = shuffled.slice(0, Math.min(questionCount, shuffled.length));
+
+      setQuestions(selected);
+      setCurrentIndex(0);
+      setResults([]);
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error fetching incorrect questions:', err);
     } finally {
       setLoading(false);
     }
@@ -130,6 +191,7 @@ export const useQuiz = (questionCount: number = 5) => {
     loading,
     error,
     fetchQuestions,
+    fetchIncorrectQuestions,
     submitAnswer,
     nextQuestion,
     reset,
