@@ -409,31 +409,6 @@ export default function SettingsScreen() {
           </Card>
         </View>
 
-        {/* 試験選択 */}
-        <View style={styles.section}>
-          <Text variant="h3" style={styles.sectionTitle}>学習する試験</Text>
-          <Card style={styles.card}>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => { impactLight(); setShowExamModal(true); }}
-              activeOpacity={0.7}
-            >
-              <View style={styles.menuContent}>
-                <View style={styles.menuTitleRow}>
-                  <Ionicons name="school-outline" size={20} color={colors.primary} style={styles.menuIcon} />
-                  <View style={styles.menuTextContainer}>
-                    <Text variant="body">現在の試験</Text>
-                    <Text variant="caption" color={colors.textLight} style={styles.menuDescription}>
-                      {selectedExamName || '未選択'}
-                    </Text>
-                  </View>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
-              </View>
-            </TouchableOpacity>
-          </Card>
-        </View>
-
         {/* 統計 */}
         <View style={styles.section}>
           <Text variant="h3" style={styles.sectionTitle}>その他</Text>
