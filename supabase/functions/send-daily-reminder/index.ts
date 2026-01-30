@@ -1,143 +1,232 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import type { SlotType } from './messages.ts';
+import { selectMessage, substituteVariables } from './selectMessage.ts';
 
 const EXPO_PUSH_API_URL = 'https://exp.host/--/api/v2/push/send';
+const BATCH_SIZE = 100;
 
 interface ExpoPushMessage {
   to: string;
   sound: 'default';
   title: string;
   body: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
+}
+
+interface RequestBody {
+  slot?: SlotType;
+}
+
+function getTodayJST(): string {
+  const now = Date.now();
+  const jstOffset = 9 * 60 * 60 * 1000;
+  return new Date(now + jstOffset).toISOString().slice(0, 10);
+}
+
+function getDateDaysAgo(today: string, days: number): string {
+  const d = new Date(today + 'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString().slice(0, 10);
 }
 
 serve(async (req) => {
   try {
-    // Supabaseクライアントの作成
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // 現在の時刻を取得
-    const now = new Date();
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
-    const currentTime = `${String(currentHour).padStart(2, '0')}:${String(currentMinute).padStart(2, '0')}`;
+    let body: RequestBody = {};
+    try {
+      body = (await req.json()) as RequestBody;
+    } catch {
+      // 空 body や JSON でない場合は evening として従来互換
+      body = { slot: 'evening' };
+    }
+    const slot: SlotType = body.slot ?? 'evening';
 
-    // 今日の日付
-    const today = now.toISOString().split('T')[0];
+    const today = getTodayJST();
+    const threeDaysAgo = getDateDaysAgo(today, 3);
 
-    // 通知時刻が現在時刻と一致するユーザーを取得
+    const validSlots: SlotType[] = [
+      'morning',
+      'lunch',
+      'evening',
+      'night',
+      'final',
+      'deadline',
+      'recovery',
+    ];
+    if (!validSlots.includes(slot)) {
+      return new Response(
+        JSON.stringify({ error: `Invalid slot: ${slot}` }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, push_token, notification_enabled, notification_time')
+      .select('id, push_token, daily_goal')
       .eq('notification_enabled', true)
       .not('push_token', 'is', null);
 
-    if (profilesError) {
-      throw profilesError;
-    }
-
+    if (profilesError) throw profilesError;
     if (!profiles || profiles.length === 0) {
       return new Response(
-        JSON.stringify({ message: 'No users to notify' }),
+        JSON.stringify({ message: 'No users to notify', slot }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // 通知時刻が現在時刻と一致するユーザーをフィルタ
-    const usersToNotify = profiles.filter(profile => {
-      if (!profile.notification_time) return false;
-      const notificationTime = profile.notification_time.substring(0, 5); // "HH:MM"形式
-      return notificationTime === currentTime;
-    });
+    const { data: todayProgressList } = await supabase
+      .from('daily_progress')
+      .select('user_id, questions_answered')
+      .eq('date', today);
 
-    if (usersToNotify.length === 0) {
-      return new Response(
-        JSON.stringify({ message: 'No users match current notification time' }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
-      );
+    const progressByUser = new Map<string, number>();
+    for (const p of todayProgressList ?? []) {
+      progressByUser.set(p.user_id, p.questions_answered ?? 0);
     }
 
-    // 各ユーザーの今日の学習状況を確認
-    const notifications: ExpoPushMessage[] = [];
+    const { data: streaksList } = await supabase
+      .from('streaks')
+      .select('user_id, current_streak, last_completed_date')
+      .in('user_id', profiles.map((p) => p.id));
 
-    for (const user of usersToNotify) {
-      // 今日の進捗を確認
-      const { data: todayProgress } = await supabase
-        .from('daily_progress')
-        .select('questions_answered')
-        .eq('user_id', user.id)
-        .eq('date', today)
-        .single();
+    const streakByUser = new Map<string, number>();
+    const lastCompletedByUser = new Map<string, string | null>();
+    for (const s of streaksList ?? []) {
+      streakByUser.set(s.user_id, s.current_streak ?? 0);
+      lastCompletedByUser.set(s.user_id, s.last_completed_date ?? null);
+    }
 
-      // 今日まだ学習していない場合のみ通知
-      if (!todayProgress || todayProgress.questions_answered === 0) {
-        // ストリーク情報を取得
-        const { data: streak } = await supabase
-          .from('streaks')
-          .select('current_streak')
-          .eq('user_id', user.id)
-          .single();
+    const { data: logRows } = await supabase
+      .from('push_notification_log')
+      .select('user_id, date, message_id')
+      .gte('date', threeDaysAgo)
+      .lte('date', today);
 
-        const currentStreak = streak?.current_streak || 0;
+    const recentMessageIdsByUser = new Map<string, string[]>();
+    for (const row of logRows ?? []) {
+      const key = row.user_id;
+      if (!recentMessageIdsByUser.has(key)) recentMessageIdsByUser.set(key, []);
+      recentMessageIdsByUser.get(key)!.push(row.message_id);
+    }
 
-        // 通知メッセージを生成
-        let title: string;
-        let body: string;
-
-        if (currentStreak > 0) {
-          title = '🔥 ストリーク継続中！';
-          body = `${currentStreak}日連続達成中！今日も学習を続けよう！`;
-        } else {
-          title = '📚 今日の学習';
-          body = '今日の学習、まだ終わってないよ！';
+    let userIdsToNotify = profiles
+      .filter((p) => {
+        const answered = progressByUser.get(p.id) ?? 0;
+        const streak = streakByUser.get(p.id) ?? 0;
+        const lastCompleted = lastCompletedByUser.get(p.id) ?? null;
+        if (slot === 'recovery') {
+          return streak === 0 && answered === 0 && lastCompleted != null;
         }
+        if (slot === 'morning') {
+          return answered === 0 && (streak > 0 || lastCompleted == null);
+        }
+        return answered === 0;
+      })
+      .map((p) => p.id);
 
-        notifications.push({
-          to: user.push_token!,
-          sound: 'default',
-          title,
-          body,
-          data: { type: 'daily_reminder' },
-        });
-      }
+    if (slot === 'deadline') {
+      const { data: finalSent } = await supabase
+        .from('push_notification_log')
+        .select('user_id')
+        .eq('date', today)
+        .eq('slot', 'final');
+      const finalSentSet = new Set((finalSent ?? []).map((r) => r.user_id));
+      userIdsToNotify = userIdsToNotify.filter((id) => finalSentSet.has(id));
+    }
+
+    const notifications: ExpoPushMessage[] = [];
+    const logInserts: { user_id: string; date: string; slot: string; message_id: string }[] = [];
+
+    for (const profile of profiles) {
+      if (!userIdsToNotify.includes(profile.id)) continue;
+
+      const pushToken = profile.push_token as string;
+      const dailyGoal = profile.daily_goal ?? 5;
+      const todayAnswered = progressByUser.get(profile.id) ?? 0;
+      const streak = streakByUser.get(profile.id) ?? 0;
+      const remaining = Math.max(0, dailyGoal - todayAnswered);
+      const recentMessageIds = recentMessageIdsByUser.get(profile.id) ?? [];
+
+      const message = selectMessage({
+        slot,
+        streak,
+        dailyGoal,
+        todayQuestionsAnswered: todayAnswered,
+        recentMessageIds,
+      });
+
+      const { title, body } = substituteVariables(
+        message.title,
+        message.body,
+        streak,
+        remaining
+      );
+
+      notifications.push({
+        to: pushToken,
+        sound: 'default',
+        title,
+        body,
+        data: { type: 'daily_reminder', slot, message_id: message.id },
+      });
+
+      logInserts.push({
+        user_id: profile.id,
+        date: today,
+        slot,
+        message_id: message.id,
+      });
     }
 
     if (notifications.length === 0) {
       return new Response(
-        JSON.stringify({ message: 'All users have already completed today' }),
+        JSON.stringify({
+          message: slot === 'deadline' ? 'No users received final today' : 'All users have already completed today',
+          slot,
+        }),
         { status: 200, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
-    // Expo Push APIに送信
-    const response = await fetch(EXPO_PUSH_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'Accept-Encoding': 'gzip, deflate',
-      },
-      body: JSON.stringify(notifications),
-    });
+    for (let i = 0; i < notifications.length; i += BATCH_SIZE) {
+      const batch = notifications.slice(i, i + BATCH_SIZE);
+      const res = await fetch(EXPO_PUSH_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'Accept-Encoding': 'gzip, deflate',
+        },
+        body: JSON.stringify(batch),
+      });
+      const result = await res.json();
+      if (res.status !== 200) {
+        console.error('Expo Push API error:', result);
+      }
+    }
 
-    const result = await response.json();
+    if (logInserts.length > 0) {
+      const { error: logError } = await supabase.from('push_notification_log').insert(logInserts);
+      if (logError) console.error('push_notification_log insert error:', logError);
+    }
 
     return new Response(
       JSON.stringify({
         message: 'Notifications sent',
+        slot,
         count: notifications.length,
-        result,
       }),
       { status: 200, headers: { 'Content-Type': 'application/json' } }
     );
   } catch (error) {
     console.error('Error:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: (error as Error).message }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
 });
-

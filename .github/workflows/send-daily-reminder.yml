@@ -2,20 +2,69 @@ name: Send Daily Reminder
 
 on:
   schedule:
-    # 毎時0分に実行（UTC時間）
-    # 日本時間の19:00に送信したい場合: 10:00 UTC (JST = UTC+9)
-    # 例: '0 10 * * *' で毎日UTC 10:00（日本時間19:00）に実行
-    - cron: '0 * * * *'  # 毎時0分（推奨：ユーザーの設定時刻に合わせて送信）
-  workflow_dispatch: # 手動実行も可能
+    # JST に対応する UTC 時刻で実行（JST = UTC+9）
+    - cron: '0 22 * * *'   # 7:00 JST - morning (+ recovery は Phase 5 で同一実行内に組み込み)
+    - cron: '0 3 * * *'    # 12:00 JST - lunch
+    - cron: '0 10 * * *'   # 19:00 JST - evening
+    - cron: '30 12 * * *'  # 21:30 JST - night
+    - cron: '15 14 * * *'  # 23:15 JST - final
+    - cron: '50 14 * * *'  # 23:50 JST - deadline
+  workflow_dispatch:
+    inputs:
+      slot:
+        description: 'Slot'
+        required: true
+        default: 'evening'
+        type: choice
+        options:
+          - morning
+          - lunch
+          - evening
+          - night
+          - final
+          - deadline
+          - recovery
 
 jobs:
   send-reminder:
     runs-on: ubuntu-latest
     steps:
-      - name: Call Supabase Edge Function
+      - name: Set slot (scheduled run)
+        if: github.event_name == 'schedule'
         run: |
-          curl -X POST \
+          H=$(date -u +%H)
+          M=$(date -u +%M)
+          if [ "$H" = "22" ] && [ "$M" = "00" ]; then echo "SLOT=morning" >> $GITHUB_ENV; fi
+          if [ "$H" = "03" ] && [ "$M" = "00" ]; then echo "SLOT=lunch" >> $GITHUB_ENV; fi
+          if [ "$H" = "10" ] && [ "$M" = "00" ]; then echo "SLOT=evening" >> $GITHUB_ENV; fi
+          if [ "$H" = "12" ] && [ "$M" = "30" ]; then echo "SLOT=night" >> $GITHUB_ENV; fi
+          if [ "$H" = "14" ] && [ "$M" = "15" ]; then echo "SLOT=final" >> $GITHUB_ENV; fi
+          if [ "$H" = "14" ] && [ "$M" = "50" ]; then echo "SLOT=deadline" >> $GITHUB_ENV; fi
+
+      - name: Set slot (manual run)
+        if: github.event_name == 'workflow_dispatch'
+        run: echo "SLOT=${{ github.event.inputs.slot }}" >> $GITHUB_ENV
+
+      - name: Call Supabase Edge Function (recovery at 7:00 JST only)
+        if: env.SLOT == 'morning'
+        run: |
+          HTTP=$(curl -s -w "%{http_code}" -o /tmp/resp_recovery.json -X POST \
             "${{ secrets.SUPABASE_URL }}/functions/v1/send-daily-reminder" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
             -H "Content-Type: application/json" \
-            -d '{}'
+            -d '{"slot":"recovery"}')
+          echo "recovery response ($HTTP):" && cat /tmp/resp_recovery.json
+          [ "${HTTP:0:1}" = "2" ] || exit 1
+
+      - name: Call Supabase Edge Function
+        env:
+          SLOT: ${{ env.SLOT }}
+        run: |
+          BODY="{\"slot\":\"${SLOT:-evening}\"}"
+          HTTP=$(curl -s -w "%{http_code}" -o /tmp/resp.json -X POST \
+            "${{ secrets.SUPABASE_URL }}/functions/v1/send-daily-reminder" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d "$BODY")
+          echo "response ($HTTP):" && cat /tmp/resp.json
+          [ "${HTTP:0:1}" = "2" ] || exit 1

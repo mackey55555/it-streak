@@ -221,6 +221,32 @@ export interface Database {
           created_at?: string
         }
       }
+      push_notification_log: {
+        Row: {
+          id: string
+          user_id: string
+          date: string
+          slot: 'morning' | 'lunch' | 'evening' | 'night' | 'final' | 'deadline' | 'recovery'
+          message_id: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          date: string
+          slot: 'morning' | 'lunch' | 'evening' | 'night' | 'final' | 'deadline' | 'recovery'
+          message_id: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          date?: string
+          slot?: 'morning' | 'lunch' | 'evening' | 'night' | 'final' | 'deadline' | 'recovery'
+          message_id?: string
+          created_at?: string
+        }
+      }
     }
   }
 }

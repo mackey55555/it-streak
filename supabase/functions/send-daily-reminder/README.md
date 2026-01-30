@@ -1,90 +1,60 @@
 # 毎日の学習リマインダー送信機能
 
-このEdge Functionは、設定された時刻にユーザーにPush通知を送信します。
+この Edge Function は、スロット（時間帯）ごとにユーザーへ Push 通知を送信します。設計は `PUSH_NOTIFICATION_DESIGN.md` を参照。
 
 ## 機能
 
-- 通知時刻が現在時刻と一致するユーザーを取得
-- 今日まだ学習していないユーザーに通知を送信
-- ストリーク情報に基づいてメッセージをカスタマイズ
+- **スロット**: morning / lunch / evening / night / final / deadline / recovery
+- 今日まだ学習していないユーザーに送信（recovery はストリーク切れ翌日に限定）
+- 23:50（deadline）は 23:15（final）送信済みユーザーのみ
+- 過去3日間の送信履歴でメッセージ重複を排除し、ストリークに応じてメッセージを選択
 
 ## デプロイ方法
 
 ```bash
-# Supabase CLIでデプロイ
 supabase functions deploy send-daily-reminder
 ```
 
-## 定期実行の設定
+## 定期実行（GitHub Actions）
 
-### 方法1: GitHub Actions（推奨・無料）
+`.github/workflows/send-daily-reminder.yml` で以下が設定されています。
 
-`pg_cron` が利用できない場合（無料プランなど）、GitHub Actionsを使用できます。
+- **cron**: 7:00 / 12:00 / 19:00 / 21:30 / 23:15 / 23:50 JST に対応する UTC で実行
+- **7:00**: 先に `slot=recovery`、続けて `slot=morning` を呼び出し
 
-#### 1. GitHub Secretsの設定
-
-リポジトリの「Settings」→「Secrets and variables」→「Actions」で以下を追加：
+### GitHub Secrets
 
 - `SUPABASE_URL`: `https://YOUR_PROJECT_REF.supabase.co`
-- `SUPABASE_ANON_KEY`: SupabaseのAnon Key
+- `SUPABASE_ANON_KEY`: Supabase の Anon Key
 
-#### 2. ワークフローファイル
+## 手動テスト
 
-`.github/workflows/send-daily-reminder.yml` が既に作成されています。
+### 1. GitHub Actions から実行
 
-#### 3. 実行スケジュールの調整
+1. リポジトリの **Actions** タブを開く
+2. **Send Daily Reminder** ワークフローを選択
+3. **Run workflow** をクリック
+4. **Slot** で `morning` / `lunch` / `evening` / `night` / `final` / `deadline` / `recovery` のいずれかを選択
+5. **Run workflow** で実行
+6. 実行ログで **Call Supabase Edge Function** のステップを開き、`response (200):` と JSON を確認
 
-日本時間の19:00に送信したい場合（UTC 10:00）：
-```yaml
-- cron: '0 10 * * *'  # 毎日UTC 10:00（日本時間19:00）
-```
-
-毎時実行する場合：
-```yaml
-- cron: '0 * * * *'  # 毎時0分
-```
-
-#### 4. 手動実行
-
-GitHubリポジトリの「Actions」タブから手動実行も可能です。
-
-### 方法2: pg_cron（有料プランのみ）
-
-Supabaseの有料プランで `pg_cron` が利用可能な場合：
-
-```sql
--- pg_cron拡張を有効化（初回のみ）
-CREATE EXTENSION IF NOT EXISTS pg_cron;
-
--- 毎時0分に実行
-SELECT cron.schedule(
-  'send-daily-reminder',
-  '0 * * * *', -- 毎時0分
-  $$
-  SELECT
-    net.http_post(
-      url := 'https://YOUR_PROJECT_REF.supabase.co/functions/v1/send-daily-reminder',
-      headers := '{"Content-Type": "application/json", "Authorization": "Bearer YOUR_ANON_KEY"}'::jsonb,
-      body := '{}'::jsonb
-    ) AS request_id;
-  $$
-);
-
--- スケジュールを確認
-SELECT * FROM cron.job WHERE jobname = 'send-daily-reminder';
-
--- スケジュールを削除（必要に応じて）
--- SELECT cron.unschedule('send-daily-reminder');
-```
-
-**注意**: `pg_cron` はSupabaseの有料プランでのみ利用可能です。無料プランでは `relation "cron.job" does not exist` エラーが発生します。
-
-## 手動実行（テスト用）
+### 2. curl で直接呼び出し
 
 ```bash
+# 例: evening スロット
 curl -X POST \
   'https://YOUR_PROJECT_REF.supabase.co/functions/v1/send-daily-reminder' \
   -H 'Authorization: Bearer YOUR_ANON_KEY' \
-  -H 'Content-Type: application/json'
+  -H 'Content-Type: application/json' \
+  -d '{"slot":"evening"}'
 ```
 
+### 3. 送信ログの確認
+
+Supabase Dashboard → **Table Editor** → `push_notification_log` で以下を確認できます。
+
+- `date`: 送信日（JST の日付）
+- `slot`: スロット名
+- `message_id`: 送ったメッセージ ID（M01, E02 など）
+
+対象ユーザーがいない場合は `count: 0` や `All users have already completed today` のようなレスポンスになります。テスト用に「今日まだ学習していない」ユーザーと `notification_enabled = true`・`push_token` が設定されている必要があります。
