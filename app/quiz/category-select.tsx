@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Card, Text, ErrorView, SkeletonCard } from '../../components/ui';
 import { colors, spacing, borderRadius } from '../../constants/theme';
+import { impactLight } from '../../lib/haptics';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
 
@@ -158,6 +159,7 @@ export default function CategorySelectScreen() {
   };
 
   const handleGoBack = () => {
+    impactLight();
     router.back();
   };
 
@@ -226,7 +228,12 @@ export default function CategorySelectScreen() {
             return (
               <TouchableOpacity
                 key={category.id}
-                onPress={() => handleCategorySelect(category.id, category.name)}
+                onPress={() => {
+                  if (!isDisabled) {
+                    impactLight();
+                    handleCategorySelect(category.id, category.name);
+                  }
+                }}
                 activeOpacity={isDisabled ? 1 : 0.7}
                 disabled={isDisabled}
                 style={styles.categoryItem}

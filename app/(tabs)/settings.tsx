@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, Text } from '../../components/ui';
 import { colors, spacing, borderRadius, fontSizes } from '../../constants/theme';
+import { impactLight } from '../../lib/haptics';
 import { useAuth } from '../../hooks/useAuth';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
 import { supabase } from '../../lib/supabase';
@@ -336,7 +337,7 @@ export default function SettingsScreen() {
           <Card style={styles.card}>
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={() => setShowExamModal(true)}
+              onPress={() => { impactLight(); setShowExamModal(true); }}
               activeOpacity={0.7}
             >
               <View style={styles.menuContent}>
@@ -414,7 +415,7 @@ export default function SettingsScreen() {
           <Card style={styles.card}>
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={() => setShowExamModal(true)}
+              onPress={() => { impactLight(); setShowExamModal(true); }}
               activeOpacity={0.7}
             >
               <View style={styles.menuContent}>
@@ -438,7 +439,7 @@ export default function SettingsScreen() {
           <Text variant="h3" style={styles.sectionTitle}>その他</Text>
           <TouchableOpacity 
             style={styles.menuItem}
-            onPress={() => router.push('/(tabs)/stats')}
+            onPress={() => { impactLight(); router.push('/(tabs)/stats'); }}
           >
             <View style={styles.menuTitleRow}>
               <Ionicons name="stats-chart-outline" size={20} color={colors.primary} style={styles.menuIcon} />
@@ -474,7 +475,7 @@ export default function SettingsScreen() {
             <View style={styles.modalHeader}>
               <Text variant="h2" style={styles.modalTitle}>試験を選択</Text>
               <TouchableOpacity
-                onPress={() => setShowExamModal(false)}
+                onPress={() => { impactLight(); setShowExamModal(false); }}
                 style={styles.modalCloseButton}
               >
                 <Ionicons name="close" size={24} color={colors.text} />
@@ -487,7 +488,12 @@ export default function SettingsScreen() {
                 return (
                   <TouchableOpacity
                     key={exam.id}
-                    onPress={() => handleExamChange(exam.id)}
+                    onPress={() => {
+                      if (!isDisabled) {
+                        impactLight();
+                        handleExamChange(exam.id);
+                      }
+                    }}
                     activeOpacity={isDisabled ? 1 : 0.7}
                     disabled={isDisabled}
                     style={styles.examOption}
