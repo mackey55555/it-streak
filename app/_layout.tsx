@@ -36,10 +36,13 @@ export default function RootLayout() {
     }
   }, [loading]);
 
-  // カスタムスプラッシュ（すとりーひょっこり）を表示するため、ネイティブスプラッシュを早めに非表示
+  // カスタムスプラッシュを表示するため、ネイティブスプラッシュを可能な限り早く非表示
+  // （ネイティブスプラッシュはOSがJS起動前に表示するため「表示しない」ことは不可）
   useEffect(() => {
-    const t = setTimeout(() => SplashScreen.hideAsync(), 100);
-    return () => clearTimeout(t);
+    const id = requestAnimationFrame(() => {
+      SplashScreen.hideAsync();
+    });
+    return () => cancelAnimationFrame(id);
   }, []);
 
   // アプリの準備が整ったらスプラッシュ表示終了（appIsReady でコンテンツに切り替え）
