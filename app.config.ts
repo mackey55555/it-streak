@@ -2,9 +2,10 @@ import { ExpoConfig, ConfigContext } from 'expo/config';
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  name: 'it-streak',
+  name: 'IT Streak',
   slug: 'quizapp',
   version: '1.0.0',
+  description: '基本情報技術者試験対策のための、ゲーミフィケーション要素を取り入れた学習アプリ。ストリーク機能で毎日の学習を継続し、4択クイズで実力をアップ。',
   orientation: 'portrait',
   icon: './assets/icon.png',
   userInterfaceStyle: 'light',
@@ -16,9 +17,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   assetBundlePatterns: ['**/*'],
   ios: {
     supportsTablet: true,
-    bundleIdentifier: 'jp.auris.quizapp',
+    bundleIdentifier: 'com.techguild.itstreak',
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
+      NSUserNotificationsUsageDescription: '学習リマインダーを受け取るために通知の許可が必要です。',
+    },
+    config: {
+      usesNonExemptEncryption: false,
     },
   },
   android: {
@@ -26,7 +31,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#FEFCF9',
     },
-    package: 'jp.auris.quizapp',
+    package: 'com.techguild.itstreak',
   },
   web: {
     favicon: './assets/favicon.png',
