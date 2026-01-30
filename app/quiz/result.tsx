@@ -4,6 +4,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, Text, Confetti, Character } from '../../components/ui';
 import { colors, spacing, borderRadius } from '../../constants/theme';
+import { notificationSuccess } from '../../lib/haptics';
 import { useStreak } from '../../hooks/useStreak';
 import { useEffect, useState, useRef } from 'react';
 
@@ -23,6 +24,9 @@ export default function ResultScreen() {
   const scoreOpacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // 結果画面表示時のハプティクス
+    notificationSuccess();
+
     // ストリーク情報を更新
     refetchStreak();
     // 前回のストリークを保存（ストリーク継続判定用）

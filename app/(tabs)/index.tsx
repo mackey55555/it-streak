@@ -4,6 +4,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, ProgressBar, Text, StreakCardSkeleton, ProgressCardSkeleton, Character } from '../../components/ui';
 import { colors, spacing, borderRadius } from '../../constants/theme';
+import { impactLight } from '../../lib/haptics';
 import { useStreak } from '../../hooks/useStreak';
 import { useDailyProgress } from '../../hooks/useDailyProgress';
 import { useAuth } from '../../hooks/useAuth';
@@ -315,7 +316,10 @@ export default function HomeScreen() {
               {selectedExamName}
             </Text>
             <TouchableOpacity
-              onPress={() => router.push('/(tabs)/settings')}
+              onPress={() => {
+                impactLight();
+                router.push('/(tabs)/settings');
+              }}
               style={styles.examBadgeButton}
             >
               <Ionicons name="settings-outline" size={14} color={colors.textLight} />
@@ -398,7 +402,10 @@ export default function HomeScreen() {
 
         {/* 今週の学習カード（コンパクト版） */}
         <TouchableOpacity 
-          onPress={() => router.push('/(tabs)/stats')}
+          onPress={() => {
+            impactLight();
+            router.push('/(tabs)/stats');
+          }}
           activeOpacity={0.7}
         >
           <Card style={styles.weeklyCard}>
@@ -462,7 +469,10 @@ export default function HomeScreen() {
         <View style={styles.menuSection}>
           <TouchableOpacity 
             style={styles.menuItem}
-            onPress={() => router.push('/quiz/category-select')}
+            onPress={() => {
+              impactLight();
+              router.push('/quiz/category-select');
+            }}
             activeOpacity={0.7}
           >
             <View style={styles.menuContent}>
@@ -479,7 +489,10 @@ export default function HomeScreen() {
 
           <TouchableOpacity 
             style={styles.menuItem}
-            onPress={handleReviewIncorrect}
+            onPress={() => {
+              impactLight();
+              handleReviewIncorrect();
+            }}
             activeOpacity={0.7}
           >
             <View style={styles.menuContent}>
@@ -496,7 +509,10 @@ export default function HomeScreen() {
 
           <TouchableOpacity 
             style={styles.menuItem}
-            onPress={handleRandomChallenge}
+            onPress={() => {
+              impactLight();
+              handleRandomChallenge();
+            }}
             activeOpacity={0.7}
           >
             <View style={styles.menuContent}>

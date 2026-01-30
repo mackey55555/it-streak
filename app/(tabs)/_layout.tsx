@@ -1,6 +1,8 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Pressable } from 'react-native';
 import { colors } from '../../constants/theme';
+import { impactLight } from '../../lib/haptics';
 
 export default function TabLayout() {
   return (
@@ -20,6 +22,18 @@ export default function TabLayout() {
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '600',
+        },
+        tabBarButton: (props) => {
+          const { onPress, ...rest } = props;
+          return (
+            <Pressable
+              {...rest}
+              onPress={(e) => {
+                impactLight();
+                onPress?.(e);
+              }}
+            />
+          );
         },
       }}
     >
