@@ -3,8 +3,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuth } from '../hooks/useAuth';
 import { usePushNotifications } from '../hooks/usePushNotifications';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { colors } from '../constants/theme';
+import { SplashCharacterScreen } from './SplashCharacterScreen';
 
 // スプラッシュスクリーンの自動非表示を防ぐ
 SplashScreen.preventAutoHideAsync();
@@ -37,7 +36,13 @@ export default function RootLayout() {
     }
   }, [loading]);
 
-  // アプリの準備が整ったらスプラッシュスクリーンを非表示
+  // カスタムスプラッシュ（すとりーひょっこり）を表示するため、ネイティブスプラッシュを早めに非表示
+  useEffect(() => {
+    const t = setTimeout(() => SplashScreen.hideAsync(), 100);
+    return () => clearTimeout(t);
+  }, []);
+
+  // アプリの準備が整ったらスプラッシュ表示終了（appIsReady でコンテンツに切り替え）
   useEffect(() => {
     if (appIsReady) {
       SplashScreen.hideAsync();
@@ -66,7 +71,7 @@ export default function RootLayout() {
   }, [user, loading]);
 
   if (!appIsReady || loading) {
-    return null; // スプラッシュスクリーンが表示されている間は何も表示しない
+    return <SplashCharacterScreen />; // すとりーが左右下のいずれかからひょっこり表示
   }
 
   return (
@@ -77,13 +82,4 @@ export default function RootLayout() {
     </Stack>
   );
 }
-
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.background,
-  },
-});
 
