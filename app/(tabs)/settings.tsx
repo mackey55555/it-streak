@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, Text } from '../../components/ui';
 import { colors, spacing, borderRadius, fontSizes } from '../../constants/theme';
-import { impactLight } from '../../lib/haptics';
+import { impactMedium } from '../../lib/haptics';
 import { useAuth } from '../../hooks/useAuth';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
 import { supabase } from '../../lib/supabase';
@@ -23,7 +23,6 @@ export default function SettingsScreen() {
   const { registerForPushNotifications } = usePushNotifications();
   const [dailyGoal, setDailyGoal] = useState('5');
   const [notificationEnabled, setNotificationEnabled] = useState(true);
-  const [notificationTime, setNotificationTime] = useState('19:00');
   const [selectedExamId, setSelectedExamId] = useState<string | null>(null);
   const [selectedExamName, setSelectedExamName] = useState<string>('');
   const [exams, setExams] = useState<Exam[]>([]);
@@ -97,7 +96,7 @@ export default function SettingsScreen() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('daily_goal, notification_enabled, notification_time, selected_exam_id')
+        .select('daily_goal, notification_enabled, selected_exam_id')
         .eq('id', user.id)
         .single();
 
@@ -112,10 +111,6 @@ export default function SettingsScreen() {
           setDailyGoal(data.daily_goal.toString());
         }
         setNotificationEnabled(data.notification_enabled ?? true);
-        if (data.notification_time) {
-          // TIME型は "HH:MM:SS" 形式なので "HH:MM" に変換
-          setNotificationTime(data.notification_time.substring(0, 5));
-        }
         if (data.selected_exam_id) {
           setSelectedExamId(data.selected_exam_id);
           // 試験名を取得
@@ -226,36 +221,6 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleSaveNotificationTime = async () => {
-    if (!user) return;
-
-    // 時刻形式の検証（HH:MM）
-    const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
-    if (!timeRegex.test(notificationTime)) {
-      Alert.alert('エラー', '正しい時刻形式（HH:MM）で入力してください');
-      return;
-    }
-
-    setSaving(true);
-    try {
-      // TIME型は "HH:MM:SS" 形式が必要
-      const timeWithSeconds = `${notificationTime}:00`;
-
-      const { error } = await supabase
-        .from('profiles')
-        .update({ notification_time: timeWithSeconds })
-        .eq('id', user.id);
-
-      if (error) throw error;
-      
-      Alert.alert('成功', '通知時刻を更新しました');
-    } catch (error: any) {
-      Alert.alert('エラー', error.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const handleSignOut = async () => {
     Alert.alert(
       'ログアウト',
@@ -337,7 +302,7 @@ export default function SettingsScreen() {
           <Card style={styles.card}>
             <TouchableOpacity
               style={styles.menuItem}
-              onPress={() => { impactLight(); setShowExamModal(true); }}
+              onPress={() => { impactMedium(); setShowExamModal(true); }}
               activeOpacity={0.7}
             >
               <View style={styles.menuContent}>
@@ -374,38 +339,6 @@ export default function SettingsScreen() {
                 thumbColor={colors.background}
               />
             </View>
-
-            {notificationEnabled && (
-              <>
-                <View style={styles.divider} />
-                <View style={styles.timeContainer}>
-                  <View style={styles.timeInfo}>
-                    <Text variant="body" style={styles.timeLabel}>通知時刻</Text>
-                    <Text variant="caption" color={colors.textLight}>
-                      毎日この時刻に通知を送信します
-                    </Text>
-                  </View>
-                  <View style={styles.timeInputContainer}>
-                    <TextInput
-                      style={styles.timeInput}
-                      value={notificationTime}
-                      onChangeText={setNotificationTime}
-                      placeholder="19:00"
-                      placeholderTextColor={colors.textLight}
-                      maxLength={5}
-                    />
-                    <Button
-                      title="保存"
-                      onPress={handleSaveNotificationTime}
-                      loading={saving}
-                      disabled={loading || saving}
-                      style={styles.timeSaveButton}
-                      variant="ghost"
-                    />
-                  </View>
-                </View>
-              </>
-            )}
           </Card>
         </View>
 
@@ -414,7 +347,7 @@ export default function SettingsScreen() {
           <Text variant="h3" style={styles.sectionTitle}>その他</Text>
           <TouchableOpacity 
             style={styles.menuItem}
-            onPress={() => { impactLight(); router.push('/(tabs)/stats'); }}
+            onPress={() => { impactMedium(); router.push('/(tabs)/stats'); }}
           >
             <View style={styles.menuTitleRow}>
               <Ionicons name="stats-chart-outline" size={20} color={colors.primary} style={styles.menuIcon} />
@@ -450,7 +383,7 @@ export default function SettingsScreen() {
             <View style={styles.modalHeader}>
               <Text variant="h2" style={styles.modalTitle}>試験を選択</Text>
               <TouchableOpacity
-                onPress={() => { impactLight(); setShowExamModal(false); }}
+                onPress={() => { impactMedium(); setShowExamModal(false); }}
                 style={styles.modalCloseButton}
               >
                 <Ionicons name="close" size={24} color={colors.text} />
@@ -465,7 +398,7 @@ export default function SettingsScreen() {
                     key={exam.id}
                     onPress={() => {
                       if (!isDisabled) {
-                        impactLight();
+                        impactMedium();
                         handleExamChange(exam.id);
                       }
                     }}
@@ -643,43 +576,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: spacing.sm,
     fontSize: fontSizes.md,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginVertical: spacing.lg,
-  },
-  timeContainer: {
-    gap: spacing.md,
-  },
-  timeInfo: {
-    marginBottom: spacing.xs,
-  },
-  timeLabel: {
-    fontWeight: '600',
-    marginBottom: spacing.sm,
-    fontSize: fontSizes.md,
-  },
-  timeInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  timeInput: {
-    backgroundColor: colors.surface,
-    borderWidth: 2,
-    borderColor: colors.border,
-    borderRadius: borderRadius.md,
-    padding: spacing.md,
-    fontSize: fontSizes.lg,
-    fontWeight: '600',
-    textAlign: 'center',
-    width: 100,
-    minHeight: 48,
-    color: colors.text,
-  },
-  timeSaveButton: {
-    flex: 1,
   },
   menuContent: {
     flex: 1,

@@ -4,7 +4,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, ProgressBar, Text, StreakCardSkeleton, ProgressCardSkeleton, Character } from '../../components/ui';
 import { colors, spacing, borderRadius } from '../../constants/theme';
-import { impactLight } from '../../lib/haptics';
+import { impactMedium } from '../../lib/haptics';
 import { useStreak } from '../../hooks/useStreak';
 import { useDailyProgress } from '../../hooks/useDailyProgress';
 import { useAuth } from '../../hooks/useAuth';
@@ -317,7 +317,7 @@ export default function HomeScreen() {
             </Text>
             <TouchableOpacity
               onPress={() => {
-                impactLight();
+                impactMedium();
                 router.push('/(tabs)/settings');
               }}
               style={styles.examBadgeButton}
@@ -403,7 +403,7 @@ export default function HomeScreen() {
         {/* 今週の学習カード（コンパクト版） */}
         <TouchableOpacity 
           onPress={() => {
-            impactLight();
+            impactMedium();
             router.push('/(tabs)/stats');
           }}
           activeOpacity={0.7}
@@ -470,7 +470,7 @@ export default function HomeScreen() {
           <TouchableOpacity 
             style={styles.menuItem}
             onPress={() => {
-              impactLight();
+              impactMedium();
               router.push('/quiz/category-select');
             }}
             activeOpacity={0.7}
@@ -490,7 +490,7 @@ export default function HomeScreen() {
           <TouchableOpacity 
             style={styles.menuItem}
             onPress={() => {
-              impactLight();
+              impactMedium();
               handleReviewIncorrect();
             }}
             activeOpacity={0.7}
@@ -510,7 +510,7 @@ export default function HomeScreen() {
           <TouchableOpacity 
             style={styles.menuItem}
             onPress={() => {
-              impactLight();
+              impactMedium();
               handleRandomChallenge();
             }}
             activeOpacity={0.7}

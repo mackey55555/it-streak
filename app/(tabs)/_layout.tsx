@@ -2,7 +2,7 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable } from 'react-native';
 import { colors } from '../../constants/theme';
-import { impactLight } from '../../lib/haptics';
+import { impactMedium } from '../../lib/haptics';
 
 export default function TabLayout() {
   return (
@@ -29,7 +29,7 @@ export default function TabLayout() {
             <Pressable
               {...rest}
               onPress={(e) => {
-                impactLight();
+                impactMedium();
                 onPress?.(e);
               }}
             />

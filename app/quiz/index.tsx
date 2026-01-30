@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, ProgressBar, Text, ErrorView, Skeleton, Character } from '../../components/ui';
 import { Confetti } from '../../components/ui/Confetti';
 import { colors, spacing, borderRadius } from '../../constants/theme';
-import { notificationSuccess, notificationError, selection, impactLight } from '../../lib/haptics';
+import { notificationSuccess, notificationError, impactMedium } from '../../lib/haptics';
 import { useQuiz } from '../../hooks/useQuiz';
 import { useDailyProgress } from '../../hooks/useDailyProgress';
 import { useStreak } from '../../hooks/useStreak';
@@ -71,7 +71,7 @@ export default function QuizScreen() {
 
   const handleChoiceSelect = (choice: string) => {
     if (answerState === 'unanswered') {
-      selection();
+      impactMedium();
       setSelectedChoice(choice);
     }
   };
@@ -122,7 +122,7 @@ export default function QuizScreen() {
   };
 
   const handleClose = () => {
-    impactLight();
+    impactMedium();
     router.back();
   };
 

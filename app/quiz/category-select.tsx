@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Card, Text, ErrorView, SkeletonCard } from '../../components/ui';
 import { colors, spacing, borderRadius } from '../../constants/theme';
-import { impactLight } from '../../lib/haptics';
+import { impactMedium } from '../../lib/haptics';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
 
@@ -159,7 +159,7 @@ export default function CategorySelectScreen() {
   };
 
   const handleGoBack = () => {
-    impactLight();
+    impactMedium();
     router.back();
   };
 
@@ -230,7 +230,7 @@ export default function CategorySelectScreen() {
                 key={category.id}
                 onPress={() => {
                   if (!isDisabled) {
-                    impactLight();
+                    impactMedium();
                     handleCategorySelect(category.id, category.name);
                   }
                 }}

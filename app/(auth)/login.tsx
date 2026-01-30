@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Button, Text } from '../../components/ui';
 import { colors, spacing, borderRadius, fontSizes } from '../../constants/theme';
-import { impactLight, notificationSuccess } from '../../lib/haptics';
+import { impactMedium, notificationSuccess } from '../../lib/haptics';
 import { useAuth } from '../../hooks/useAuth';
 
 export default function LoginScreen() {
@@ -106,7 +106,7 @@ export default function LoginScreen() {
 
             {/* フッター */}
             <View style={styles.footer}>
-              <TouchableOpacity onPress={() => { impactLight(); handleSignUpNavigation(); }}>
+              <TouchableOpacity onPress={() => { impactMedium(); handleSignUpNavigation(); }}>
                 <Text variant="body" color={colors.primary} style={styles.signupText}>
                   アカウントを作成
                 </Text>

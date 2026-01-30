@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Text, Card } from '../../components/ui';
 import { colors, spacing, borderRadius, fontSizes } from '../../constants/theme';
-import { impactLight } from '../../lib/haptics';
+import { impactMedium } from '../../lib/haptics';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
 
@@ -227,7 +227,7 @@ export default function SignupScreen() {
                           key={exam.id}
                           onPress={() => {
                             if (!isDisabled) {
-                              impactLight();
+                              impactMedium();
                               setSelectedExamId(exam.id);
                             }
                           }}
@@ -306,7 +306,7 @@ export default function SignupScreen() {
 
             {/* フッター */}
             <View style={styles.footer}>
-              <TouchableOpacity onPress={() => { impactLight(); handleLoginNavigation(); }}>
+              <TouchableOpacity onPress={() => { impactMedium(); handleLoginNavigation(); }}>
                 <Text variant="body" color={colors.primary} style={styles.loginText}>
                   すでにアカウントをお持ちの方はログイン
                 </Text>

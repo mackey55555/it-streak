@@ -9,7 +9,7 @@ import {
   Animated,
 } from 'react-native';
 import { colors, fontSizes, spacing, borderRadius, shadows } from '../../constants/theme';
-import { impactLight } from '../../lib/haptics';
+import { impactMedium } from '../../lib/haptics';
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost';
 
@@ -52,7 +52,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   const handlePress = () => {
     if (!disabled && !loading) {
-      impactLight();
+      impactMedium();
       onPress();
     }
   };
