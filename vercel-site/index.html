@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IT Streak - 基本情報技術者試験対策アプリ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Meiryo', sans-serif;
+            line-height: 1.8;
+            color: #333;
+            background: linear-gradient(135deg, #58CC02 0%, #7A8A70 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 60px;
+        }
+        h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .subtitle {
+            font-size: 1.3em;
+            margin-bottom: 40px;
+            opacity: 0.95;
+        }
+        .content {
+            background: white;
+            border-radius: 16px;
+            padding: 60px 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+        }
+        .feature {
+            padding: 30px;
+            background: #fefcf9;
+            border-radius: 12px;
+            border-left: 4px solid #58CC02;
+        }
+        .feature h3 {
+            color: #58CC02;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        .feature-icon {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+        }
+        .cta {
+            text-align: center;
+            margin-top: 60px;
+            padding: 40px;
+            background: linear-gradient(135deg, #FFC800 0%, #FF9600 100%);
+            border-radius: 12px;
+            color: white;
+        }
+        .cta h2 {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        .cta p {
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
+        .app-store-badge {
+            display: inline-block;
+            margin-top: 20px;
+            opacity: 0.9;
+            transition: opacity 0.3s;
+        }
+        .app-store-badge:hover {
+            opacity: 1;
+        }
+        footer {
+            text-align: center;
+            margin-top: 60px;
+            padding: 30px;
+            color: white;
+        }
+        footer a {
+            color: white;
+            text-decoration: underline;
+            margin: 0 10px;
+        }
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+            .content {
+                padding: 40px 20px;
+            }
+            .features {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎓 IT Streak</h1>
+            <p class="subtitle">基本情報技術者試験対策アプリ</p>
+        </header>
+
+        <div class="content">
+            <section>
+                <h2 style="text-align: center; color: #58CC02; font-size: 2em; margin-bottom: 30px;">
+                    毎日の学習を継続して、合格を目指そう！
+                </h2>
+                <p style="text-align: center; font-size: 1.2em; color: #666; margin-bottom: 40px;">
+                    ゲーミフィケーション要素を取り入れた学習アプリで、<br>
+                    ストリーク機能でモチベーションを維持しながら実力をアップ。
+                </p>
+            </section>
+
+            <section class="features">
+                <div class="feature">
+                    <div class="feature-icon">🔥</div>
+                    <h3>ストリーク機能</h3>
+                    <p>連続学習日数を記録して、モチベーションを維持。毎日の学習が習慣になります。</p>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">📊</div>
+                    <h3>学習進捗管理</h3>
+                    <p>日々の学習状況を可視化。回答数、正解率、学習時間を記録して成長を実感。</p>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">🎯</div>
+                    <h3>デイリーゴール</h3>
+                    <p>1日の目標問題数を設定。達成感を得ながら、無理なく学習を継続できます。</p>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">📝</div>
+                    <h3>4択クイズ</h3>
+                    <p>過去問ベースの問題で実力アップ。詳しい解説で理解を深めます。</p>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">🔔</div>
+                    <h3>プッシュ通知</h3>
+                    <p>学習リマインダーで、毎日の学習を忘れません。通知時刻も自由に設定可能。</p>
+                </div>
+
+                <div class="feature">
+                    <div class="feature-icon">📱</div>
+                    <h3>iOS/Android対応</h3>
+                    <p>React Native (Expo) で構築。スマートフォンでいつでもどこでも学習できます。</p>
+                </div>
+            </section>
+
+            <section class="cta">
+                <h2>今すぐ始めよう！</h2>
+                <p>App Storeから無料でダウンロード</p>
+                <div class="app-store-badge">
+                    <a href="https://apps.apple.com/app/it-streak" target="_blank">
+                        <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/ja-jp?size=250x83&releaseDate=1276560000" alt="App Storeからダウンロード" style="height: 60px;">
+                    </a>
+                </div>
+            </section>
+        </div>
+
+        <footer>
+            <p>
+                <a href="/privacy-policy.html">プライバシーポリシー</a>
+            </p>
+            <p style="margin-top: 20px; opacity: 0.8;">
+                © 2026 TechGuild. All rights reserved.
+            </p>
+        </footer>
+    </div>
+</body>
+</html>
