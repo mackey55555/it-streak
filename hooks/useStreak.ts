@@ -14,6 +14,16 @@ const getTodayLocal = (): string => {
   return `${year}-${month}-${day}`;
 };
 
+// ローカル時間で昨日の日付をYYYY-MM-DD形式で取得
+const getYesterdayLocal = (): string => {
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const year = yesterday.getFullYear();
+  const month = String(yesterday.getMonth() + 1).padStart(2, '0');
+  const day = String(yesterday.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 export const useStreak = () => {
   const { user, loading: authLoading } = useAuth();
   const [streak, setStreak] = useState<Streak | null>(null);
@@ -40,7 +50,25 @@ export const useStreak = () => {
         throw fetchError;
       }
 
-      setStreak(data);
+      // 連続が途切れているかチェック（最後の学習が今日・昨日でない場合は途切れ）
+      let streakToSet = data;
+      if (data && data.current_streak > 0 && data.last_completed_date) {
+        const today = getTodayLocal();
+        const yesterday = getYesterdayLocal();
+        const lastDate = data.last_completed_date;
+        if (lastDate !== today && lastDate !== yesterday) {
+          // 途切れているのでDBの current_streak を 0 に更新
+          const { data: updated } = await supabase
+            .from('streaks')
+            .update({ current_streak: 0 })
+            .eq('user_id', user.id)
+            .select()
+            .single();
+          streakToSet = updated ?? { ...data, current_streak: 0 };
+        }
+      }
+
+      setStreak(streakToSet);
     } catch (err: any) {
       setError(err.message);
       console.error('Error fetching streak:', err);

@@ -109,10 +109,10 @@ export default function StatsScreen() {
 
       const questionIdList = questionIds?.map(q => q.id) || [];
 
-      // 選択された試験の問題に対する回答のみを取得
+      // 選択された試験の問題に対する回答のみを取得（学習日数算出のため answered_at を含める）
       const { data: answers, error: answersError } = await supabase
         .from('user_answers')
-        .select('is_correct')
+        .select('is_correct, answered_at')
         .eq('user_id', user.id)
         .in('question_id', questionIdList);
 

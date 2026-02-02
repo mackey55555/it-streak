@@ -93,11 +93,16 @@ serve(async (req) => {
       .select('user_id, current_streak, last_completed_date')
       .in('user_id', profiles.map((p) => p.id));
 
+    // ストリークは「最後の学習が今日か昨日」でないと途切れ扱い（アプリ未起動でも正しく判定）
+    const yesterday = getDateDaysAgo(today, 1);
     const streakByUser = new Map<string, number>();
     const lastCompletedByUser = new Map<string, string | null>();
     for (const s of streaksList ?? []) {
-      streakByUser.set(s.user_id, s.current_streak ?? 0);
-      lastCompletedByUser.set(s.user_id, s.last_completed_date ?? null);
+      const last = s.last_completed_date ?? null;
+      lastCompletedByUser.set(s.user_id, last);
+      const effectiveStreak =
+        last === today || last === yesterday ? (s.current_streak ?? 0) : 0;
+      streakByUser.set(s.user_id, effectiveStreak);
     }
 
     const { data: logRows } = await supabase
