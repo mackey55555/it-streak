@@ -4,7 +4,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'IT Streak',
   slug: 'quizapp',
-  version: '1.0.0',
+  version: '1.1.0',
   description: '基本情報技術者試験対策のための、ゲーミフィケーション要素を取り入れた学習アプリ。ストリーク機能で毎日の学習を継続し、4択クイズで実力をアップ。',
   orientation: 'portrait',
   icon: './assets/icon.png',

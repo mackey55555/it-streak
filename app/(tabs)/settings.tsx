@@ -367,7 +367,7 @@ export default function SettingsScreen() {
 
         {/* バージョン情報 */}
         <Text variant="caption" color={colors.textLight} style={styles.version}>
-          Version 1.0.0
+          Version 1.1.0
         </Text>
       </ScrollView>
 
