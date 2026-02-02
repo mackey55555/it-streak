@@ -98,8 +98,12 @@ export const useQuiz = (questionCount: number = 5) => {
         throw new Error('問題が見つかりませんでした');
       }
 
-      // ランダムに選択
-      const shuffled = data.sort(() => Math.random() - 0.5);
+      // 1回のセッションで同じ問題が複数回出ないよう、ID・問題文の両方で重複を除去してからシャッフル
+      const uniqueById = Array.from(new Map(data.map((q) => [q.id, q])).values());
+      const uniqueByText = Array.from(
+        new Map(uniqueById.map((q) => [q.question_text, q])).values()
+      );
+      const shuffled = uniqueByText.sort(() => Math.random() - 0.5);
       const selected = shuffled.slice(0, Math.min(questionCount, shuffled.length));
 
       setQuestions(selected);
@@ -153,8 +157,12 @@ export const useQuiz = (questionCount: number = 5) => {
         throw new Error('問題が見つかりませんでした');
       }
 
-      // ランダムに選択
-      const shuffled = questionsData.sort(() => Math.random() - 0.5);
+      // 1回のセッションで同じ問題が複数回出ないよう、ID・問題文の両方で重複を除去してからシャッフル
+      const uniqueById = Array.from(new Map(questionsData.map((q) => [q.id, q])).values());
+      const uniqueByText = Array.from(
+        new Map(uniqueById.map((q) => [q.question_text, q])).values()
+      );
+      const shuffled = uniqueByText.sort(() => Math.random() - 0.5);
       const selected = shuffled.slice(0, Math.min(questionCount, shuffled.length));
 
       setQuestions(selected);
