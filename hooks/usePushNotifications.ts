@@ -95,12 +95,15 @@ export const usePushNotifications = () => {
 
       setExpoPushToken(token.data);
 
-      // Supabaseに保存
+      // Supabaseに保存（push_token_registered_at で同一端末の「最後にログインしたアカウント」を判定）
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { error: updateError } = await supabase
           .from('profiles')
-          .update({ push_token: token.data })
+          .update({
+            push_token: token.data,
+            push_token_registered_at: new Date().toISOString(),
+          })
           .eq('id', user.id);
 
         if (updateError) {

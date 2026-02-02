@@ -66,7 +66,7 @@ serve(async (req) => {
 
     const { data: profiles, error: profilesError } = await supabase
       .from('profiles')
-      .select('id, push_token, daily_goal')
+      .select('id, push_token, daily_goal, push_token_registered_at')
       .eq('notification_enabled', true)
       .not('push_token', 'is', null);
 
@@ -138,12 +138,23 @@ serve(async (req) => {
       userIdsToNotify = userIdsToNotify.filter((id) => finalSentSet.has(id));
     }
 
+    // 同一 push_token（同一端末）では、最後にログインしたアカウント1人にのみ送る
+    type ProfileRow = (typeof profiles)[0];
+    const candidates = profiles.filter((p) => userIdsToNotify.includes(p.id));
+    const byToken = new Map<string, ProfileRow>();
+    for (const p of candidates) {
+      const token = p.push_token as string;
+      const pAt = p.push_token_registered_at ? new Date(p.push_token_registered_at).getTime() : 0;
+      const existing = byToken.get(token);
+      const existingAt = existing?.push_token_registered_at ? new Date(existing.push_token_registered_at).getTime() : 0;
+      if (!existing || pAt > existingAt) byToken.set(token, p);
+    }
+    const profilesToNotify = Array.from(byToken.values());
+
     const notifications: ExpoPushMessage[] = [];
     const logInserts: { user_id: string; date: string; slot: string; message_id: string }[] = [];
 
-    for (const profile of profiles) {
-      if (!userIdsToNotify.includes(profile.id)) continue;
-
+    for (const profile of profilesToNotify) {
       const pushToken = profile.push_token as string;
       const dailyGoal = profile.daily_goal ?? 5;
       const todayAnswered = progressByUser.get(profile.id) ?? 0;
