@@ -147,11 +147,13 @@ export default function QuizScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Skeleton width={40} height={40} borderRadius={20} />
+          <View style={styles.headerRow}>
+            <Skeleton width={36} height={36} borderRadius={18} />
+            <Skeleton width={52} height={18} />
+          </View>
           <View style={styles.progressContainer}>
             <Skeleton width="100%" height={8} />
           </View>
-          <Skeleton width={50} height={20} />
         </View>
         <View style={styles.content}>
           <Card style={styles.questionCard}>
@@ -222,17 +224,19 @@ export default function QuizScreen() {
       {/* 紙吹雪アニメーション */}
       <Confetti visible={showConfetti} duration={2000} />
       
-      {/* ヘッダー */}
+      {/* ヘッダー: 1行目=閉じる+数字、2行目=プログレスバー（全幅で確実に収まる） */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
-          <Ionicons name="close" size={24} color={colors.textLight} />
-        </TouchableOpacity>
+        <View style={styles.headerRow}>
+          <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+            <Ionicons name="close" size={24} color={colors.textLight} />
+          </TouchableOpacity>
+          <Text variant="caption" style={styles.questionNumber} numberOfLines={1}>
+            {currentIndex + 1} / {totalQuestions}
+          </Text>
+        </View>
         <View style={styles.progressContainer}>
           <ProgressBar progress={progress} height={8} />
         </View>
-        <Text variant="caption" style={styles.questionNumber}>
-          {currentIndex + 1} / {totalQuestions}
-        </Text>
       </View>
 
       {/* メインコンテンツ */}
@@ -358,27 +362,33 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   header: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
     backgroundColor: colors.background,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
   closeButton: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: spacing.xs,
   },
   progressContainer: {
-    flex: 1,
+    width: '100%',
   },
   questionNumber: {
-    minWidth: 50,
-    textAlign: 'right',
+    fontSize: 14,
+    color: colors.textLight,
+    flexShrink: 0,
   },
   scrollView: {
     flex: 1,
