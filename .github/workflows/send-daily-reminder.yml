@@ -29,17 +29,18 @@ jobs:
   send-reminder:
     runs-on: ubuntu-latest
     steps:
+      # スロットは「時」ベースで判定（cron 遅延で分がずれても正しい slot になる）
       - name: Set slot (scheduled run)
         if: github.event_name == 'schedule'
         run: |
           H=$(date -u +%H)
           M=$(date -u +%M)
-          if [ "$H" = "22" ] && [ "$M" = "00" ]; then echo "SLOT=morning" >> $GITHUB_ENV; fi
-          if [ "$H" = "03" ] && [ "$M" = "00" ]; then echo "SLOT=lunch" >> $GITHUB_ENV; fi
-          if [ "$H" = "10" ] && [ "$M" = "00" ]; then echo "SLOT=evening" >> $GITHUB_ENV; fi
-          if [ "$H" = "12" ] && [ "$M" = "30" ]; then echo "SLOT=night" >> $GITHUB_ENV; fi
-          if [ "$H" = "14" ] && [ "$M" = "15" ]; then echo "SLOT=final" >> $GITHUB_ENV; fi
-          if [ "$H" = "14" ] && [ "$M" = "50" ]; then echo "SLOT=deadline" >> $GITHUB_ENV; fi
+          if [ "$H" = "22" ]; then echo "SLOT=morning" >> $GITHUB_ENV; fi
+          if [ "$H" = "03" ]; then echo "SLOT=lunch" >> $GITHUB_ENV; fi
+          if [ "$H" = "10" ]; then echo "SLOT=evening" >> $GITHUB_ENV; fi
+          if [ "$H" = "12" ] && [ "$M" -ge "30" ]; then echo "SLOT=night" >> $GITHUB_ENV; fi
+          if [ "$H" = "14" ] && [ "$M" -lt "45" ]; then echo "SLOT=final" >> $GITHUB_ENV; fi
+          if [ "$H" = "14" ] && [ "$M" -ge "45" ]; then echo "SLOT=deadline" >> $GITHUB_ENV; fi
 
       - name: Set slot (manual run)
         if: github.event_name == 'workflow_dispatch'
