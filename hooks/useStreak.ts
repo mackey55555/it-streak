@@ -165,6 +165,56 @@ export const useStreak = () => {
     return streak.last_completed_date === today;
   };
 
+  /**
+   * ストリークを復活させる（リワード広告視聴後に呼ぶ）
+   * current_streak を 1 に、last_completed_date を今日に設定する
+   */
+  const reviveStreak = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('ユーザーが認証されていません');
+
+      const today = getTodayLocal();
+
+      const { data: currentStreak } = await supabase
+        .from('streaks')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (!currentStreak) {
+        const { data: newStreak } = await supabase
+          .from('streaks')
+          .insert({
+            user_id: user.id,
+            current_streak: 1,
+            longest_streak: 1,
+            last_completed_date: today,
+          })
+          .select()
+          .single();
+        setStreak(newStreak);
+        return;
+      }
+
+      const { data: updatedStreak } = await supabase
+        .from('streaks')
+        .update({
+          current_streak: 1,
+          last_completed_date: today,
+          // longest_streak は変更しない（過去の最長記録を維持）
+        })
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      setStreak(updatedStreak);
+    } catch (err: any) {
+      setError(err.message);
+      console.error('Error reviving streak:', err);
+    }
+  };
+
   useEffect(() => {
     // 認証が完了し、ユーザーが存在する場合のみデータを取得
     if (!authLoading && user) {
@@ -197,6 +247,7 @@ export const useStreak = () => {
     loading,
     error,
     updateStreak,
+    reviveStreak,
     checkTodayCompleted,
     refetch: fetchStreak,
   };

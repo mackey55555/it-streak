@@ -1,5 +1,9 @@
 import { ExpoConfig, ConfigContext } from 'expo/config';
 
+// AdMob App ID
+const ADMOB_IOS_APP_ID = 'ca-app-pub-3556606235552037~5046764657';
+const ADMOB_ANDROID_APP_ID = 'ca-app-pub-3556606235552037~5046764658';
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'IT Streak',
@@ -43,6 +47,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         color: '#7A8A70',
         sounds: [],
+      },
+    ],
+    [
+      'react-native-google-mobile-ads',
+      {
+        iosAppId: ADMOB_IOS_APP_ID,
+        androidAppId: ADMOB_ANDROID_APP_ID,
+        userTrackingUsageDescription:
+          '広告のパーソナライズとアプリの改善のため、お客様に最適な広告を表示するために使用します。',
       },
     ],
   ],

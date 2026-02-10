@@ -1,8 +1,17 @@
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable } from 'react-native';
+import { Pressable, View, StyleSheet } from 'react-native';
+import { Suspense, lazy } from 'react';
+import Constants from 'expo-constants';
+import { BottomTabBar } from '@react-navigation/bottom-tabs';
 import { colors } from '../../constants/theme';
 import { impactMedium } from '../../lib/haptics';
+
+const isExpoGo = Constants.appOwnership === 'expo';
+
+const BannerAdFixed = lazy(() =>
+  import('../../components/ads/BannerAdFixed').then((m) => ({ default: m.BannerAdFixed }))
+);
 
 export default function TabLayout() {
   return (
@@ -35,6 +44,16 @@ export default function TabLayout() {
             />
           );
         },
+        tabBar: (props) => (
+          <View style={styles.tabBarContainer}>
+            {!isExpoGo && (
+              <Suspense fallback={null}>
+                <BannerAdFixed />
+              </Suspense>
+            )}
+            <BottomTabBar {...props} />
+          </View>
+        ),
       }}
     >
       <Tabs.Screen 
@@ -68,3 +87,10 @@ export default function TabLayout() {
   );
 }
 
+const styles = StyleSheet.create({
+  tabBarContainer: {
+    backgroundColor: colors.background,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+});

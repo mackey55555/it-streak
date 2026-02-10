@@ -1,7 +1,8 @@
-import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Animated, Alert } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, RefreshControl, Animated, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { Button, Card, ProgressBar, Text, StreakCardSkeleton, ProgressCardSkeleton, Character } from '../../components/ui';
 import { colors, spacing, borderRadius } from '../../constants/theme';
 import { impactMedium } from '../../lib/haptics';
@@ -9,11 +10,18 @@ import { useStreak } from '../../hooks/useStreak';
 import { useDailyProgress } from '../../hooks/useDailyProgress';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
+
+// Expo Go ではマウントしない（react-native-google-mobile-ads がネイティブにないため）
+const HomeAdSection = lazy(() =>
+  import('../../components/ads/HomeAdSection').then((m) => ({ default: m.HomeAdSection }))
+);
+
+const isExpoGo = Constants.appOwnership === 'expo';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { currentStreak, loading: streakLoading, refetch: refetchStreak } = useStreak();
+  const { currentStreak, loading: streakLoading, refetch: refetchStreak, reviveStreak } = useStreak();
   const { 
     todayProgress, 
     dailyGoal, 
@@ -302,7 +310,7 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView 
         style={styles.scrollView}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, !isExpoGo && { paddingBottom: (spacing.xxl + 20) + 50 }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
@@ -341,21 +349,35 @@ export default function HomeScreen() {
           {streakLoading ? (
             <StreakCardSkeleton />
           ) : (
-            <Card style={styles.streakCard}>
-              <View style={styles.streakContent}>
-                <Animated.View
-                  style={{
-                    transform: [{ scale: streakPulse }],
-                  }}
-                >
-                  <Ionicons name="flame" size={40} color={colors.background} />
-                </Animated.View>
-                <View style={styles.streakTextContainer}>
-                  <Text variant="h2" style={styles.streakNumber}>{currentStreak}</Text>
-                  <Text variant="h3" style={styles.streakLabel}>日連続！</Text>
+            <>
+              <Card style={styles.streakCard}>
+                <View style={styles.streakContent}>
+                  <Animated.View
+                    style={{
+                      transform: [{ scale: streakPulse }],
+                    }}
+                  >
+                    <Ionicons name="flame" size={40} color={colors.background} />
+                  </Animated.View>
+                  <View style={styles.streakTextContainer}>
+                    <Text variant="h2" style={styles.streakNumber}>{currentStreak}</Text>
+                    <Text variant="h3" style={styles.streakLabel}>日連続！</Text>
+                  </View>
                 </View>
-              </View>
-            </Card>
+              </Card>
+              {/* Development Build 時のみ広告セクション（バナー・ストリーク復活）を表示 */}
+              {!isExpoGo && (
+                <Suspense fallback={null}>
+                  <HomeAdSection
+                    currentStreak={currentStreak}
+                    onEarnedReward={() => {
+                      reviveStreak();
+                      refetchStreak();
+                    }}
+                  />
+                </Suspense>
+              )}
+            </>
           )}
         </Animated.View>
 
