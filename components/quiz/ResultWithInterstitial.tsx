@@ -13,35 +13,70 @@ import { useEffect, useState, useRef } from 'react';
 
 export function ResultWithInterstitial() {
   const interstitial = useInterstitialAd(Platform.OS === 'web' ? null : adUnitIds.interstitial);
-  const [showContent, setShowContent] = useState(Platform.OS === 'web');
+  const [adDone, setAdDone] = useState(Platform.OS === 'web');
+  const [readyToAnimate, setReadyToAnimate] = useState(Platform.OS === 'web');
   const hasTriedShowAd = useRef(false);
+  const adIsShowing = useRef(false);
+  const fallbackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const clearFallback = () => {
+    if (fallbackTimer.current) {
+      clearTimeout(fallbackTimer.current);
+      fallbackTimer.current = null;
+    }
+  };
+
+  // 広告が閉じられたとき → 広告完了
   useEffect(() => {
     if (Platform.OS === 'web') return;
-    if (interstitial.isClosed) setShowContent(true);
+    if (interstitial.isClosed) {
+      adIsShowing.current = false;
+      clearFallback();
+      setAdDone(true);
+    }
   }, [interstitial.isClosed]);
 
+  // 広告エラー時（表示中のエラーでなければスキップ扱い）
   useEffect(() => {
     if (Platform.OS === 'web') return;
-    if (interstitial.error && !showContent) setShowContent(true);
-  }, [interstitial.error, showContent]);
+    if (interstitial.error && !adIsShowing.current) {
+      clearFallback();
+      setAdDone(true);
+    }
+  }, [interstitial.error]);
 
+  // マウント時にインタースティシャルを読み込み
+  // 5秒以内に読み込めなければスキップ（ただし広告表示開始後はキャンセル）
   useEffect(() => {
     if (Platform.OS === 'web') return;
     interstitial.load();
-    const fallback = setTimeout(() => setShowContent(true), 5000);
-    return () => clearTimeout(fallback);
+    fallbackTimer.current = setTimeout(() => {
+      if (!adIsShowing.current) {
+        setAdDone(true);
+      }
+    }, 5000);
+    return clearFallback;
   }, [interstitial.load]);
 
+  // 広告が読み込まれたら表示（1回だけ）
   useEffect(() => {
-    if (Platform.OS === 'web' || showContent || hasTriedShowAd.current) return;
+    if (Platform.OS === 'web' || adDone || hasTriedShowAd.current) return;
     if (interstitial.isLoaded) {
       hasTriedShowAd.current = true;
+      adIsShowing.current = true;
+      clearFallback();
       interstitial.show();
     }
-  }, [interstitial.isLoaded, showContent, interstitial.show]);
+  }, [interstitial.isLoaded, adDone, interstitial.show]);
 
-  if (!showContent) {
+  // adDone になったらアニメーション開始（広告フェードアウトの余裕を持つ）
+  useEffect(() => {
+    if (!adDone || readyToAnimate) return;
+    const timer = setTimeout(() => setReadyToAnimate(true), 400);
+    return () => clearTimeout(timer);
+  }, [adDone, readyToAnimate]);
+
+  if (!adDone) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <View style={styles.loadingContent}>
@@ -54,7 +89,7 @@ export function ResultWithInterstitial() {
     );
   }
 
-  return <ResultContent showContent={true} />;
+  return <ResultContent readyToAnimate={readyToAnimate} />;
 }
 
 const styles = StyleSheet.create({

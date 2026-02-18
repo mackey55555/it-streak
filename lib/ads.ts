@@ -5,23 +5,22 @@
  */
 import { Platform } from 'react-native';
 
-// 開発中は TestIds 相当、本番ビルドでは本番ID
 const useTestIds = __DEV__;
 
-// テスト用ID（react-native-google-mobile-ads の TestIds.BANNER / REWARDED / INTERSTITIAL と同じ値）
+// テスト用ID（react-native-google-mobile-ads の TestIds と同じ値）
 const TEST_IDS = Platform.select({
   android: {
-    BANNER: 'ca-app-pub-3940256099942544/6300978111',
+    ADAPTIVE_BANNER: 'ca-app-pub-3940256099942544/9214589741',
     REWARDED: 'ca-app-pub-3940256099942544/5224354917',
     INTERSTITIAL: 'ca-app-pub-3940256099942544/1033173712',
   },
   ios: {
-    BANNER: 'ca-app-pub-3940256099942544/2934735716',
+    ADAPTIVE_BANNER: 'ca-app-pub-3940256099942544/2435281174',
     REWARDED: 'ca-app-pub-3940256099942544/1712485313',
     INTERSTITIAL: 'ca-app-pub-3940256099942544/4411468910',
   },
   default: {
-    BANNER: 'ca-app-pub-3940256099942544/6300978111',
+    ADAPTIVE_BANNER: 'ca-app-pub-3940256099942544/9214589741',
     REWARDED: 'ca-app-pub-3940256099942544/5224354917',
     INTERSTITIAL: 'ca-app-pub-3940256099942544/1033173712',
   },
@@ -37,7 +36,7 @@ const PRODUCTION = {
 };
 
 export const adUnitIds = {
-  banner: useTestIds ? TEST_IDS.BANNER : PRODUCTION.BANNER,
+  banner: useTestIds ? TEST_IDS.ADAPTIVE_BANNER : PRODUCTION.BANNER,
   rewarded: useTestIds ? TEST_IDS.REWARDED : PRODUCTION.REWARDED,
   interstitial: useTestIds ? TEST_IDS.INTERSTITIAL : PRODUCTION.INTERSTITIAL,
 };

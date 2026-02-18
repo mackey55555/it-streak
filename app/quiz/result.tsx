@@ -19,7 +19,7 @@ const isExpoGo = Constants.appOwnership === 'expo';
 export default function ResultScreen() {
   // Expo Go では広告モジュールを読み込まない（ネイティブにないためクラッシュする）
   if (isExpoGo) {
-    return <ResultContent showContent={true} />;
+    return <ResultContent readyToAnimate={true} />;
   }
 
   return (

@@ -12,12 +12,16 @@ import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 
+const isExpoGo = Constants.appOwnership === 'expo';
+
 // Expo Go ではマウントしない（react-native-google-mobile-ads がネイティブにないため）
 const HomeAdSection = lazy(() =>
   import('../../components/ads/HomeAdSection').then((m) => ({ default: m.HomeAdSection }))
 );
 
-const isExpoGo = Constants.appOwnership === 'expo';
+const BannerAdFixed = isExpoGo
+  ? null
+  : require('../../components/ads/BannerAdFixed').BannerAdFixed;
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -310,7 +314,7 @@ export default function HomeScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView 
         style={styles.scrollView}
-        contentContainerStyle={[styles.content, !isExpoGo && { paddingBottom: (spacing.xxl + 20) + 50 }]}
+        contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
@@ -486,6 +490,9 @@ export default function HomeScreen() {
           onPress={handleStartLearning}
           style={styles.startButton}
         />
+
+        {/* バナー広告 */}
+        {!isExpoGo && BannerAdFixed && <BannerAdFixed />}
 
         {/* サブメニュー */}
         <View style={styles.menuSection}>

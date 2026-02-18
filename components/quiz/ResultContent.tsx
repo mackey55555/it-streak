@@ -12,10 +12,10 @@ import { useStreak } from '../../hooks/useStreak';
 import { useEffect, useState, useRef } from 'react';
 
 type Props = {
-  showContent: boolean;
+  readyToAnimate: boolean;
 };
 
-export function ResultContent({ showContent }: Props) {
+export function ResultContent({ readyToAnimate }: Props) {
   const router = useRouter();
   const params = useLocalSearchParams<{ correct: string; total: string }>();
   const { currentStreak, refetch: refetchStreak } = useStreak();
@@ -29,9 +29,11 @@ export function ResultContent({ showContent }: Props) {
   const [showConfetti, setShowConfetti] = useState(false);
   const cardScale = useRef(new Animated.Value(0)).current;
   const scoreOpacity = useRef(new Animated.Value(0)).current;
+  const hasAnimated = useRef(false);
 
   useEffect(() => {
-    if (!showContent) return;
+    if (!readyToAnimate || hasAnimated.current) return;
+    hasAnimated.current = true;
 
     notificationSuccess();
     refetchStreak();
@@ -41,43 +43,31 @@ export function ResultContent({ showContent }: Props) {
     scoreOpacity.setValue(0);
 
     let confettiTimeout: ReturnType<typeof setTimeout> | null = null;
-    let rafId: number;
 
-    // 広告閉じ後にアニメーションが始まるよう、1フレーム遅延してから開始
-    rafId = requestAnimationFrame(() => {
-      const cardAnimation = Animated.spring(cardScale, {
-        toValue: 1,
-        tension: 50,
-        friction: 7,
-        useNativeDriver: true,
-      });
-
-      const scoreAnimation = Animated.timing(scoreOpacity, {
-        toValue: 1,
-        duration: 800,
-        delay: 300,
-        useNativeDriver: true,
-      });
-
-      const parallelAnimation = Animated.parallel([cardAnimation, scoreAnimation]);
-      parallelAnimation.start();
-
-      if (percentage >= 80) {
-        confettiTimeout = setTimeout(() => setShowConfetti(true), 500);
-      }
+    const cardAnimation = Animated.spring(cardScale, {
+      toValue: 1,
+      tension: 50,
+      friction: 7,
+      useNativeDriver: true,
     });
 
+    const scoreAnimation = Animated.timing(scoreOpacity, {
+      toValue: 1,
+      duration: 800,
+      delay: 300,
+      useNativeDriver: true,
+    });
+
+    Animated.parallel([cardAnimation, scoreAnimation]).start();
+
+    if (percentage >= 80) {
+      confettiTimeout = setTimeout(() => setShowConfetti(true), 500);
+    }
+
     return () => {
-      cancelAnimationFrame(rafId);
       if (confettiTimeout) clearTimeout(confettiTimeout);
-      try {
-        cardScale.setValue(0);
-        scoreOpacity.setValue(0);
-      } catch (e) {
-        // クリーンアップ時のエラーは無視
-      }
     };
-  }, [showContent]);
+  }, [readyToAnimate]);
 
   const getMessage = () => {
     if (percentage >= 80) return { icon: 'trophy', text: '素晴らしい！', color: colors.secondary, characterType: 'result-high' as const, characterSize: 'large' as const };
