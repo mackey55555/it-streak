@@ -492,7 +492,11 @@ export default function HomeScreen() {
         />
 
         {/* バナー広告 */}
-        {!isExpoGo && BannerAdFixed && <BannerAdFixed />}
+        {!isExpoGo && BannerAdFixed && (
+          <View style={styles.bannerWrapper}>
+            <BannerAdFixed />
+          </View>
+        )}
 
         {/* サブメニュー */}
         <View style={styles.menuSection}>
@@ -660,6 +664,10 @@ const styles = StyleSheet.create({
   startButton: {
     marginBottom: spacing.xl,
     marginTop: spacing.md,
+  },
+  bannerWrapper: {
+    marginBottom: spacing.xl,
+    alignItems: 'center',
   },
   menuSection: {
     gap: spacing.md,
