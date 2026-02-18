@@ -29,6 +29,7 @@ export default function SettingsScreen() {
   const [showExamModal, setShowExamModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -243,6 +244,80 @@ export default function SettingsScreen() {
     );
   };
 
+  const performDeleteAccount = async () => {
+    if (!user) return;
+
+    try {
+      setDeleting(true);
+
+      const { error } = await supabase.functions.invoke('delete-account', {
+        body: {},
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      // ローカルのセッションも破棄してログイン画面へ
+      const { error: signOutError } = await signOut();
+      if (signOutError) {
+        console.error('Error signing out after account deletion:', signOutError);
+      }
+
+      Alert.alert('アカウントを削除しました', 'ご利用ありがとうございました。');
+      router.replace('/(auth)/login');
+    } catch (err: any) {
+      console.error('Error deleting account:', err);
+
+      // Edge Function 側から返ってきた詳細メッセージがあれば優先して表示
+      const contextError =
+        err?.context?.error ??
+        err?.context?.message ??
+        (typeof err?.context === 'string' ? err.context : null);
+
+      const message =
+        contextError ??
+        err?.message ??
+        'アカウントの削除に失敗しました。時間をおいて再度お試しください。';
+
+      Alert.alert('エラー', message);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    if (!user) return;
+
+    Alert.alert(
+      'アカウントを削除しますか？',
+      'アカウントを削除すると、すべての学習データ・ストリーク記録が完全に削除され、復元できません。本当に削除しますか？',
+      [
+        { text: 'キャンセル', style: 'cancel' },
+        {
+          text: '削除する',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              '最終確認',
+              'この操作は取り消せません。本当にアカウントを削除しますか？',
+              [
+                { text: 'キャンセル', style: 'cancel' },
+                {
+                  text: '削除する',
+                  style: 'destructive',
+                  onPress: () => {
+                    performDeleteAccount();
+                  },
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView 
@@ -358,12 +433,23 @@ export default function SettingsScreen() {
         </View>
 
         {/* ログアウト */}
-        <Button
-          title="ログアウト"
-          onPress={handleSignOut}
-          variant="ghost"
-          style={styles.logoutButton}
-        />
+        <View style={styles.accountActions}>
+          <Button
+            title="ログアウト"
+            onPress={handleSignOut}
+            variant="ghost"
+            style={styles.logoutButton}
+          />
+          <Button
+            title="アカウントを削除する"
+            onPress={handleDeleteAccount}
+            variant="ghost"
+            loading={deleting}
+            disabled={deleting}
+            style={[styles.deleteAccountButton]}
+            textStyle={styles.deleteAccountText}
+          />
+        </View>
 
         {/* バージョン情報 */}
         <Text variant="caption" color={colors.textLight} style={styles.version}>
@@ -562,6 +648,16 @@ const styles = StyleSheet.create({
   version: {
     textAlign: 'center',
     marginTop: spacing.xl,
+  },
+  accountActions: {
+    marginTop: spacing.lg,
+    gap: spacing.md,
+  },
+  deleteAccountButton: {
+    borderColor: colors.incorrect,
+  },
+  deleteAccountText: {
+    color: colors.incorrect,
   },
   notificationRow: {
     flexDirection: 'row',
