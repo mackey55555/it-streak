@@ -1,9 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import Constants from 'expo-constants';
 import { useAuth } from '../hooks/useAuth';
 import { usePushNotifications } from '../hooks/usePushNotifications';
-import { SplashCharacterScreen } from './SplashCharacterScreen';
+import { initializeAdsAndRequestATT } from '../lib/initAds';
+import { SplashCharacterScreen } from '../components/SplashCharacterScreen';
+
+const isExpoGo = Constants.appOwnership === 'expo';
 
 // スプラッシュスクリーンの自動非表示を防ぐ
 SplashScreen.preventAutoHideAsync();
@@ -72,6 +76,13 @@ export default function RootLayout() {
       registerForPushNotifications();
     }
   }, [user, loading]);
+
+  // AdMob 初期化と iOS ATT リクエスト（Development Build 時のみ。Expo Go ではネイティブモジュールがないためスキップ）
+  useEffect(() => {
+    if (appIsReady && !isExpoGo) {
+      initializeAdsAndRequestATT();
+    }
+  }, [appIsReady]);
 
   if (!appIsReady || loading) {
     return <SplashCharacterScreen />; // すとりーが左右下のいずれかからひょっこり表示

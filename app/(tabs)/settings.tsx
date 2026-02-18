@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Switch, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, Text } from '../../components/ui';
 import { colors, spacing, borderRadius, fontSizes } from '../../constants/theme';
@@ -9,6 +10,12 @@ import { impactMedium } from '../../lib/haptics';
 import { useAuth } from '../../hooks/useAuth';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
 import { supabase } from '../../lib/supabase';
+
+const isExpoGo = Constants.appOwnership === 'expo';
+
+const BannerAdFixed = isExpoGo
+  ? null
+  : require('../../components/ads/BannerAdFixed').BannerAdFixed;
 
 interface Exam {
   id: string;
@@ -371,6 +378,13 @@ export default function SettingsScreen() {
           </Card>
         </View>
 
+        {/* バナー広告 */}
+        {!isExpoGo && BannerAdFixed && (
+          <View style={styles.adContainer}>
+            <BannerAdFixed />
+          </View>
+        )}
+
         {/* 試験選択 */}
         <View style={styles.section}>
           <Text variant="h3" style={styles.sectionTitle}>学習する試験</Text>
@@ -453,7 +467,7 @@ export default function SettingsScreen() {
 
         {/* バージョン情報 */}
         <Text variant="caption" color={colors.textLight} style={styles.version}>
-          Version 1.1.0
+          Version 1.1.2
         </Text>
       </ScrollView>
 
@@ -564,6 +578,10 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xxl,
     color: colors.text,
     fontWeight: 'bold',
+  },
+  adContainer: {
+    marginBottom: spacing.xl,
+    alignItems: 'center',
   },
   section: {
     marginBottom: spacing.xxl,

@@ -2,12 +2,19 @@ import { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
+import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 import { Card, Text, LineChart, MonthlyCalendar } from '../../components/ui';
 import { colors, spacing, borderRadius } from '../../constants/theme';
 import { useStreak } from '../../hooks/useStreak';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../hooks/useAuth';
+
+const isExpoGo = Constants.appOwnership === 'expo';
+
+const BannerAdFixed = isExpoGo
+  ? null
+  : require('../../components/ads/BannerAdFixed').BannerAdFixed;
 
 export default function StatsScreen() {
   const { user, loading: authLoading } = useAuth();
@@ -372,6 +379,13 @@ export default function StatsScreen() {
           </Card>
         </View>
 
+        {/* バナー広告 */}
+        {!isExpoGo && BannerAdFixed && (
+          <View style={styles.adContainer}>
+            <BannerAdFixed />
+          </View>
+        )}
+
         {/* 学習量の推移グラフ */}
         {dailyStats.length > 0 && (
           <View style={styles.section}>
@@ -567,6 +581,10 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xxl,
     color: colors.text,
     fontWeight: 'bold',
+  },
+  adContainer: {
+    marginBottom: spacing.xl,
+    alignItems: 'center',
   },
   section: {
     marginBottom: spacing.xxl,
