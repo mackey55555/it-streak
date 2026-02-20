@@ -4,190 +4,353 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IT Streak - 基本情報技術者試験対策アプリ</title>
+    <meta name="description" content="基本情報技術者試験対策の学習アプリ。ストリーク機能でモチベーションを維持しながら、毎日コツコツ学習。4択クイズ・進捗可視化・デイリーゴールで合格をサポート。">
+    <meta name="apple-itunes-app" content="app-id=6758322757">
+    <!-- OGP -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://it-streak.vercel.app">
+    <meta property="og:title" content="IT Streak - 基本情報技術者試験対策アプリ">
+    <meta property="og:description" content="毎日5分、ストリークを繋げて合格へ。基本情報技術者試験対策の学習アプリ。">
+    <meta property="og:image" content="https://it-streak.vercel.app/icon.png">
+    <meta property="og:locale" content="ja_JP">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="IT Streak - 基本情報技術者試験対策アプリ">
+    <meta name="twitter:description" content="毎日5分、ストリークを繋げて合格へ。">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --primary: #7A8A70;
+            --primary-soft: rgba(122, 138, 112, 0.12);
+            --secondary: #B5854F;
+            --secondary-soft: rgba(181, 133, 79, 0.12);
+            --bg: #FEFCF9;
+            --surface: #F5F3F0;
+            --surface-elevated: #fff;
+            --text: #2C2C2C;
+            --text-muted: #6A6A6A;
+            --border: #E5E3E0;
+            --shadow-sm: 0 2px 8px rgba(58, 58, 58, 0.06);
+            --shadow-md: 0 8px 24px rgba(58, 58, 58, 0.08);
+            --shadow-lg: 0 16px 48px rgba(58, 58, 58, 0.1);
+            --radius-sm: 12px;
+            --radius-md: 16px;
+            --radius-lg: 24px;
+            --radius-full: 9999px;
+            --transition: 0.2s ease;
         }
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'Meiryo', sans-serif;
-            line-height: 1.8;
-            color: #333;
-            background: linear-gradient(135deg, #58CC02 0%, #7A8A70 100%);
+            font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic', sans-serif;
+            line-height: 1.7;
+            color: var(--text);
+            background: var(--bg);
             min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
         }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 40px 20px;
-        }
-        header {
+        .wrap { max-width: 1000px; margin: 0 auto; padding: 0 24px; }
+
+        /* Hero */
+        .hero {
+            padding: 56px 0 72px;
             text-align: center;
-            color: white;
-            margin-bottom: 60px;
+            position: relative;
+            overflow: hidden;
         }
-        h1 {
-            font-size: 3em;
-            margin-bottom: 20px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        .hero::before {
+            content: '';
+            position: absolute;
+            inset: -20% -10% 0;
+            background: radial-gradient(ellipse 80% 60% at 50% 0%, var(--primary-soft) 0%, transparent 60%);
+            pointer-events: none;
         }
-        .subtitle {
-            font-size: 1.3em;
+        .hero .wrap { position: relative; z-index: 1; }
+        .hero-brand {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .hero-mascot {
+            width: 128px;
+            height: 128px;
+            margin-bottom: 12px;
+            border-radius: var(--radius-lg);
+            background: var(--surface-elevated);
+            box-shadow: var(--shadow-md);
+            object-fit: cover;
+            border: 1px solid var(--border);
+            transition: transform var(--transition);
+        }
+        .hero-mascot:hover { transform: scale(1.02); }
+        .hero .pill {
+            display: inline-block;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            color: var(--primary);
+            background: var(--primary-soft);
+            padding: 6px 14px;
+            border-radius: var(--radius-full);
+            letter-spacing: 0.02em;
+        }
+        .hero h1 {
+            font-size: clamp(2rem, 6vw, 2.75rem);
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+            line-height: 1.25;
+        }
+        .hero .catch {
+            font-size: clamp(1rem, 2.5vw, 1.125rem);
+            color: var(--text-muted);
+            margin-bottom: 32px;
+            max-width: 360px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .hero .app-badge {
+            display: inline-block;
+            transition: transform var(--transition);
+        }
+        .hero .app-badge:hover { transform: scale(1.04); }
+        .hero .app-badge img {
+            height: 48px;
+            width: auto;
+            display: block;
+        }
+        @media (min-width: 600px) {
+            .hero .app-badge img { height: 56px; }
+        }
+
+        /* Section */
+        .section {
+            padding: 64px 0;
+        }
+        .section-title {
+            font-size: clamp(1.25rem, 3vw, 1.5rem);
+            font-weight: 700;
+            color: var(--text);
+            text-align: center;
             margin-bottom: 40px;
-            opacity: 0.95;
+            letter-spacing: -0.02em;
         }
-        .content {
-            background: white;
-            border-radius: 16px;
-            padding: 60px 40px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-        }
+        .section-title span { color: var(--primary); }
+
+        /* Features */
         .features {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 30px;
-            margin: 40px 0;
+            gap: 20px;
+            grid-template-columns: 1fr;
+        }
+        @media (min-width: 640px) {
+            .features { grid-template-columns: repeat(2, 1fr); }
         }
         .feature {
-            padding: 30px;
-            background: #fefcf9;
-            border-radius: 12px;
-            border-left: 4px solid #58CC02;
+            background: var(--surface-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 28px;
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow var(--transition), transform var(--transition), border-color var(--transition);
+        }
+        .feature:hover {
+            box-shadow: var(--shadow-md);
+            border-color: rgba(122, 138, 112, 0.25);
+        }
+        .feature-icon-wrap {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-sm);
+            background: var(--primary-soft);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 16px;
         }
         .feature h3 {
-            color: #58CC02;
-            margin-bottom: 15px;
-            font-size: 1.3em;
+            font-size: 1.0625rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 8px;
+            letter-spacing: -0.01em;
         }
-        .feature-icon {
-            font-size: 2.5em;
-            margin-bottom: 15px;
+        .feature p {
+            font-size: 0.9375rem;
+            color: var(--text-muted);
+            line-height: 1.65;
         }
+
+        /* こんな人におすすめ */
+        .target {
+            background: linear-gradient(180deg, var(--surface) 0%, var(--bg) 100%);
+            padding: 64px 0;
+        }
+        .target-list {
+            list-style: none;
+            display: grid;
+            gap: 12px;
+        }
+        @media (min-width: 600px) {
+            .target-list { grid-template-columns: repeat(2, 1fr); }
+        }
+        .target-list li {
+            padding: 18px 20px;
+            padding-left: 48px;
+            position: relative;
+            font-size: 0.9375rem;
+            color: var(--text);
+            background: var(--surface-elevated);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
+            transition: border-color var(--transition), box-shadow var(--transition);
+        }
+        .target-list li:hover {
+            border-color: rgba(181, 133, 79, 0.3);
+            box-shadow: var(--shadow-sm);
+        }
+        .target-list li::before {
+            content: '';
+            position: absolute;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--secondary);
+        }
+
+        /* CTA */
         .cta {
             text-align: center;
-            margin-top: 60px;
-            padding: 40px;
-            background: linear-gradient(135deg, #FFC800 0%, #FF9600 100%);
-            border-radius: 12px;
-            color: white;
+            padding: 64px 24px;
         }
-        .cta h2 {
-            font-size: 2em;
-            margin-bottom: 20px;
+        .cta-box {
+            background: linear-gradient(145deg, var(--primary-soft) 0%, var(--secondary-soft) 100%);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 48px 32px;
+            box-shadow: var(--shadow-sm);
         }
+        .cta .section-title { margin-bottom: 12px; }
         .cta p {
-            font-size: 1.2em;
-            margin-bottom: 30px;
+            font-size: 0.9375rem;
+            color: var(--text-muted);
+            margin-bottom: 28px;
         }
-        .app-store-badge {
+        .cta .app-badge {
             display: inline-block;
-            margin-top: 20px;
-            opacity: 0.9;
-            transition: opacity 0.3s;
+            transition: transform var(--transition);
         }
-        .app-store-badge:hover {
-            opacity: 1;
+        .cta .app-badge:hover { transform: scale(1.04); }
+        .cta .app-badge img {
+            height: 52px;
+            width: auto;
         }
+        @media (min-width: 600px) {
+            .cta .app-badge img { height: 56px; }
+        }
+
+        /* Footer */
         footer {
+            padding: 40px 24px;
             text-align: center;
-            margin-top: 60px;
-            padding: 30px;
-            color: white;
+            border-top: 1px solid var(--border);
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            background: var(--surface);
         }
         footer a {
-            color: white;
-            text-decoration: underline;
-            margin: 0 10px;
+            color: var(--primary);
+            text-decoration: none;
+            transition: color var(--transition);
         }
-        @media (max-width: 768px) {
-            h1 {
-                font-size: 2em;
-            }
-            .content {
-                padding: 40px 20px;
-            }
-            .features {
-                grid-template-columns: 1fr;
-            }
-        }
+        footer a:hover { color: var(--secondary); }
+        footer .links { margin-bottom: 12px; }
+        footer .links a { margin: 0 12px; }
+        footer .copy { opacity: 0.85; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🎓 IT Streak</h1>
-            <p class="subtitle">基本情報技術者試験対策アプリ</p>
-        </header>
-
-        <div class="content">
-            <section>
-                <h2 style="text-align: center; color: #58CC02; font-size: 2em; margin-bottom: 30px;">
-                    毎日の学習を継続して、合格を目指そう！
-                </h2>
-                <p style="text-align: center; font-size: 1.2em; color: #666; margin-bottom: 40px;">
-                    ゲーミフィケーション要素を取り入れた学習アプリで、<br>
-                    ストリーク機能でモチベーションを維持しながら実力をアップ。
-                </p>
-            </section>
-
-            <section class="features">
-                <div class="feature">
-                    <div class="feature-icon">🔥</div>
-                    <h3>ストリーク機能</h3>
-                    <p>連続学習日数を記録して、モチベーションを維持。毎日の学習が習慣になります。</p>
+    <main>
+        <section class="hero">
+            <div class="wrap">
+                <div class="hero-brand">
+                    <img src="icon.png" alt="すとりー（Sutori）" class="hero-mascot" width="128" height="128">
+                    <span class="pill">基本情報技術者試験対策</span>
                 </div>
+                <h1>IT Streak</h1>
+                <p class="catch">毎日5分、ストリークを繋げて合格へ</p>
+                <a href="https://apps.apple.com/jp/app/it-streak-%E5%9F%BA%E6%9C%AC%E6%83%85%E5%A0%B1%E6%8A%80%E8%A1%93%E8%80%85%E8%A9%B6%E9%A8%93/id6758322757" class="app-badge" rel="noopener noreferrer" target="_blank" aria-label="App Storeでダウンロード">
+                    <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/ja-jp?size=250x83&releaseDate=1276560000" alt="App Storeからダウンロード" width="250" height="83">
+                </a>
+            </div>
+        </section>
 
-                <div class="feature">
-                    <div class="feature-icon">📊</div>
-                    <h3>学習進捗管理</h3>
-                    <p>日々の学習状況を可視化。回答数、正解率、学習時間を記録して成長を実感。</p>
+        <section class="section" id="features">
+            <div class="wrap">
+                <h2 class="section-title">主な<span>機能</span></h2>
+                <div class="features">
+                    <div class="feature">
+                        <div class="feature-icon-wrap">🔥</div>
+                        <h3>ストリーク機能</h3>
+                        <p>連続学習日数を記録。毎日続けるほどモチベーションが上がり、習慣化をサポートします。</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon-wrap">📝</div>
+                        <h3>4択クイズ演習</h3>
+                        <p>過去問ベースの4択クイズで実力アップ。解説付きで理解を深められます。</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon-wrap">📊</div>
+                        <h3>学習進捗の可視化</h3>
+                        <p>回答数・正解率・学習時間を記録し、成長を実感できるダッシュボード。</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon-wrap">🎯</div>
+                        <h3>デイリーゴール・通知</h3>
+                        <p>1日の目標問題数を設定し、プッシュ通知でリマインド。今日も1問、未来の自分へ。</p>
+                    </div>
                 </div>
+            </div>
+        </section>
 
-                <div class="feature">
-                    <div class="feature-icon">🎯</div>
-                    <h3>デイリーゴール</h3>
-                    <p>1日の目標問題数を設定。達成感を得ながら、無理なく学習を継続できます。</p>
-                </div>
+        <section class="section target">
+            <div class="wrap">
+                <h2 class="section-title">こんな人に<span>おすすめ</span></h2>
+                <ul class="target-list">
+                    <li>基本情報技術者試験の合格を目指している方</li>
+                    <li>毎日少しずつ、無理なく勉強を続けたい方</li>
+                    <li>ストリークでモチベーションを保ちたい方</li>
+                    <li>通勤・スキマ時間に手軽に問題演習をしたい方</li>
+                </ul>
+            </div>
+        </section>
 
-                <div class="feature">
-                    <div class="feature-icon">📝</div>
-                    <h3>4択クイズ</h3>
-                    <p>過去問ベースの問題で実力アップ。詳しい解説で理解を深めます。</p>
-                </div>
-
-                <div class="feature">
-                    <div class="feature-icon">🔔</div>
-                    <h3>プッシュ通知</h3>
-                    <p>学習リマインダーで、毎日の学習を忘れません。通知時刻も自由に設定可能。</p>
-                </div>
-
-                <div class="feature">
-                    <div class="feature-icon">📱</div>
-                    <h3>iOS/Android対応</h3>
-                    <p>React Native (Expo) で構築。スマートフォンでいつでもどこでも学習できます。</p>
-                </div>
-            </section>
-
-            <section class="cta">
-                <h2>今すぐ始めよう！</h2>
-                <p>App Storeから無料でダウンロード</p>
-                <div class="app-store-badge">
-                    <a href="https://apps.apple.com/app/it-streak" target="_blank">
-                        <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/ja-jp?size=250x83&releaseDate=1276560000" alt="App Storeからダウンロード" style="height: 60px;">
+        <section class="section cta">
+            <div class="wrap">
+                <div class="cta-box">
+                    <h2 class="section-title">無料でダウンロード</h2>
+                    <p>App Storeから今すぐインストールして、今日からストリークを始めましょう。</p>
+                    <a href="https://apps.apple.com/jp/app/it-streak-%E5%9F%BA%E6%9C%AC%E6%83%85%E5%A0%B1%E6%8A%80%E8%A1%93%E8%80%85%E8%A9%B6%E9%A8%93/id6758322757" class="app-badge" rel="noopener noreferrer" target="_blank" aria-label="App Storeでダウンロード">
+                        <img src="https://tools.applemediaservices.com/api/badges/download-on-the-app-store/black/ja-jp?size=250x83&releaseDate=1276560000" alt="App Storeからダウンロード" width="250" height="83">
                     </a>
                 </div>
-            </section>
-        </div>
+            </div>
+        </section>
+    </main>
 
-        <footer>
-            <p>
-                <a href="/privacy-policy.html">プライバシーポリシー</a>
-            </p>
-            <p style="margin-top: 20px; opacity: 0.8;">
-                © 2026 TechGuild. All rights reserved.
-            </p>
-        </footer>
-    </div>
+    <footer>
+        <div class="links">
+            <a href="https://defiant-duck-001.notion.site/2f57d79aec448087b3f6d6497cafb837" target="_blank" rel="noopener noreferrer">プライバシーポリシー</a>
+            <a href="#contact">お問い合わせ</a>
+        </div>
+        <p class="copy">© 2026 TechGuild. All rights reserved.</p>
+    </footer>
 </body>
 </html>

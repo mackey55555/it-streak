@@ -5,8 +5,10 @@
 ## ファイル構成
 
 - `index.html` - ランディングページ（アプリの紹介ページ）
+- `icon.png` - アプリアイコン（ヒーロー用・OGP用）
 - `privacy-policy.html` - プライバシーポリシー（App Store提出に必須）
 - `vercel.json` - Vercelの設定ファイル
+- `app-ads.txt` - AdMob用（配置すると `https://it-streak.vercel.app/app-ads.txt` で公開されます）
 
 ## Vercelでのデプロイ手順
 
@@ -56,5 +58,7 @@ Vercelダッシュボードから、カスタムドメインを設定できま�
 
 ## 注意事項
 
-- プライバシーポリシーの内容は、アプリの実際のデータ収集に合わせて適宜更新してください
-- ランディングページのApp Storeリンクは、アプリが公開された後に更新してください
+- フッターのプライバシーポリシーは Notion へのリンク（`https://defiant-duck-001.notion.site/...`）です。ランディングページ内のプライバシーは Notion を参照してください。
+- お問い合わせリンクは `index.html` 内の `#contact` を、メールアドレスや問い合わせフォームURLに差し替えてください。
+- AdMob 用の `app-ads.txt` を同じディレクトリに配置すると、`https://it-streak.vercel.app/app-ads.txt` で自動的に公開されます。
+- プライバシーポリシー（Notion）の内容は、アプリの実際のデータ収集に合わせて適宜更新してください。
