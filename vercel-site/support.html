@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>サポート - IT Streak</title>
+    <meta name="description" content="IT Streakのよくある質問とお問い合わせ先です。">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #7A8A70;
+            --primary-soft: rgba(122, 138, 112, 0.12);
+            --secondary: #B5854F;
+            --bg: #FEFCF9;
+            --surface: #F5F3F0;
+            --surface-elevated: #fff;
+            --text: #2C2C2C;
+            --text-muted: #6A6A6A;
+            --border: #E5E3E0;
+            --shadow-sm: 0 2px 8px rgba(58, 58, 58, 0.06);
+            --radius-sm: 12px;
+            --radius-md: 16px;
+            --transition: 0.2s ease;
+        }
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic', sans-serif;
+            line-height: 1.7;
+            color: var(--text);
+            background: var(--bg);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+        .wrap { max-width: 680px; margin: 0 auto; padding: 0 24px; }
+        .back {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 32px;
+            font-size: 0.9375rem;
+            color: var(--primary);
+            text-decoration: none;
+            transition: color var(--transition);
+        }
+        .back:hover { color: var(--secondary); }
+        .page-title {
+            font-size: clamp(1.5rem, 4vw, 1.75rem);
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
+        }
+        .page-lead {
+            font-size: 0.9375rem;
+            color: var(--text-muted);
+            margin-bottom: 40px;
+        }
+        .content {
+            padding: 48px 0 64px;
+        }
+        .content h2 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-top: 32px;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+        .content h2:first-of-type { margin-top: 0; }
+        .content h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-top: 24px;
+            margin-bottom: 8px;
+        }
+        .content p, .content li {
+            font-size: 0.9375rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+        .content ul { padding-left: 1.25em; margin-bottom: 16px; }
+        .contact-box {
+            background: var(--surface-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            margin-top: 24px;
+            box-shadow: var(--shadow-sm);
+        }
+        .contact-box p { margin-bottom: 8px; }
+        .contact-box a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+        .contact-box a:hover { text-decoration: underline; }
+        .signature {
+            margin-top: 40px;
+            font-size: 0.9375rem;
+            color: var(--text-muted);
+        }
+        footer {
+            padding: 32px 24px;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            background: var(--surface);
+        }
+        footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+        footer a:hover { color: var(--secondary); }
+        footer .links { margin-bottom: 12px; }
+        footer .links a { margin: 0 12px; }
+    </style>
+</head>
+<body>
+    <div class="wrap content">
+        <a href="/" class="back">← トップへ</a>
+        <h1 class="page-title">IT Streak サポート</h1>
+        <p class="page-lead">IT Streakをご利用いただきありがとうございます。</p>
+
+        <h2>よくある質問</h2>
+
+        <h3>Q. アカウントを削除したい</h3>
+        <p>設定画面から「アカウント削除」を選択してください。関連するすべてのデータが削除されます。</p>
+
+        <h3>Q. ストリークがリセットされた</h3>
+        <p>ストリークは毎日0:00（日本時間）にリセット判定されます。前日に1問以上解いていない場合、リセットされます。</p>
+
+        <h3>Q. 問題の内容に誤りがある</h3>
+        <p>お手数ですが、下記のお問い合わせ先までご連絡ください。</p>
+
+        <h3>Q. アプリが正常に動作しない</h3>
+        <p>アプリを再起動してお試しください。それでも解決しない場合は、下記までご連絡ください。</p>
+
+        <h2>お問い合わせ</h2>
+        <p>ご意見・ご要望・不具合報告は、以下のメールアドレスまでお願いいたします。</p>
+        <div class="contact-box">
+            <p><strong>メール</strong></p>
+            <p><a href="mailto:a.makihara55@gmail.com">a.makihara55@gmail.com</a></p>
+            <p style="font-size: 0.875rem; margin-top: 12px;">※返信には数日お時間をいただく場合があります。</p>
+        </div>
+        <p class="signature">— IT Streak 運営</p>
+    </div>
+
+    <footer>
+        <div class="links">
+            <a href="/">トップ</a>
+            <a href="https://defiant-duck-001.notion.site/2f57d79aec448087b3f6d6497cafb837" target="_blank" rel="noopener noreferrer">プライバシーポリシー</a>
+        </div>
+        <p>© 2026 TechGuild. All rights reserved.</p>
+    </footer>
+</body>
+</html>

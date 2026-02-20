@@ -9,6 +9,7 @@
 - `privacy-policy.html` - プライバシーポリシー（App Store提出に必須）
 - `vercel.json` - Vercelの設定ファイル
 - `app-ads.txt` - AdMob用（配置すると `https://it-streak.vercel.app/app-ads.txt` で公開されます）
+- `support.html` - サポート・よくある質問・お問い合わせ（`/support` で表示）
 
 ## Vercelでのデプロイ手順
 
@@ -48,6 +49,7 @@ Vercelダッシュボードから、カスタムドメインを設定できま�
 デプロイ後、以下のようなURLが発行されます：
 - `https://it-streak.vercel.app` - ランディングページ
 - `https://it-streak.vercel.app/privacy-policy` - プライバシーポリシー
+- `https://it-streak.vercel.app/support` - サポート・お問い合わせ
 
 このURLをApp Store Connectで設定してください。
 
