@@ -1,7 +1,7 @@
 /**
  * クイズ結果の表示コンテンツ（広告表示の有無に依存しない共通UI）
  */
-import { View, StyleSheet, Animated, useWindowDimensions } from 'react-native';
+import { View, StyleSheet, Animated, useWindowDimensions, TouchableOpacity, Text as RNText, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -74,10 +74,10 @@ export function ResultContent({ readyToAnimate }: Props) {
   }, [readyToAnimate]);
 
   const getMessage = () => {
-    if (percentage >= 80) return { icon: 'trophy', text: '素晴らしい！', color: colors.secondary, characterType: 'result-high' as const, characterSize: 'large' as const };
-    if (percentage >= 60) return { icon: 'thumbs-up', text: 'いい調子！', color: colors.primary, characterType: 'result-good' as const, characterSize: 'medium' as const };
-    if (percentage >= 40) return { icon: 'fitness', text: 'もう少し！', color: colors.streak, characterType: 'result-medium' as const, characterSize: 'medium' as const };
-    return { icon: 'book', text: '復習しよう！', color: colors.textLight, characterType: 'result-low' as const, characterSize: 'medium' as const };
+    if (percentage >= 80) return { icon: 'trophy', text: 'すごいにゃ！', color: colors.secondary, characterType: 'result-high' as const, characterSize: 'large' as const };
+    if (percentage >= 60) return { icon: 'thumbs-up', text: 'いい調子にゃ！', color: colors.primary, characterType: 'result-good' as const, characterSize: 'medium' as const };
+    if (percentage >= 40) return { icon: 'fitness', text: 'もう少しにゃ！', color: colors.streak, characterType: 'result-medium' as const, characterSize: 'medium' as const };
+    return { icon: 'book', text: '復習するにゃ！', color: colors.textLight, characterType: 'result-low' as const, characterSize: 'medium' as const };
   };
 
   const message = getMessage();
@@ -90,19 +90,84 @@ export function ResultContent({ readyToAnimate }: Props) {
   const handleGoHome = () => router.replace('/(tabs)');
   const handleRetry = () => router.replace('/quiz');
 
+  const handleShareOnX = () => {
+    const emoji = percentage === 100 ? '🎉' : percentage >= 80 ? '✨' : percentage >= 60 ? '💪' : '📖';
+    const pick = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
+    const catMessage = percentage === 100 ? pick([
+      'パーフェクトだにゃ！🐱✨',
+      '満点にゃ！天才だにゃ〜！🐱✨',
+      '完璧だにゃ！誇っていいにゃ！🐱✨',
+      'すごすぎるにゃ！尊敬するにゃ！🐱✨',
+      '全問正解！神だにゃ〜！🐱✨',
+      'ミスなしだにゃ！かっこいいにゃ！🐱✨',
+      '100点満点だにゃ！最高にゃ！🐱✨',
+      'パーフェクト達成だにゃ！感動にゃ！🐱✨',
+      '文句なしの満点にゃ！🐱✨',
+      '全問正解とは…恐れ入ったにゃ！🐱✨',
+    ]) : percentage >= 80 ? pick([
+      'すごいにゃ！この調子だにゃ！🐱',
+      'さすがだにゃ〜！🐱',
+      'かなりデキるにゃ！🐱',
+      'いい点数だにゃ！自信もっていいにゃ！🐱',
+      '実力がついてきたにゃ！🐱',
+      'お見事だにゃ〜！🐱',
+      '高得点にゃ！頼もしいにゃ！🐱',
+      'バッチリだにゃ！合格間違いなしにゃ！🐱',
+      'ここまでできれば上出来にゃ！🐱',
+      '安定感がすごいにゃ！🐱',
+    ]) : percentage >= 60 ? pick([
+      'いい感じだにゃ！🐱',
+      'まずまずだにゃ！あと一歩にゃ！🐱',
+      '着実に成長してるにゃ！🐱',
+      '悪くないにゃ！次はもっといけるにゃ！🐱',
+      'この調子で続けるにゃ！🐱',
+      '合格ラインが見えてきたにゃ！🐱',
+      'コツコツが大事だにゃ！🐱',
+      'あとちょっとで高得点にゃ！🐱',
+      'がんばってるにゃ〜！🐱',
+      '伸びしろたっぷりにゃ！🐱',
+    ]) : pick([
+      '次はもっとがんばるにゃ！🐱',
+      'ドンマイにゃ！復習するにゃ！🐱',
+      '大丈夫にゃ！繰り返せば覚えるにゃ！🐱',
+      'まだまだこれからにゃ！🐱',
+      'くじけないにゃ！応援してるにゃ！🐱',
+      '苦手を見つけたにゃ！チャンスにゃ！🐱',
+      '失敗は成功のもとだにゃ！🐱',
+      '復習あるのみにゃ！一緒にがんばるにゃ！🐱',
+      'ここから巻き返すにゃ！🐱',
+      '諦めなければ大丈夫にゃ！🐱',
+    ]);
+    const lines = [
+      `IT Streakでの学習記録📚`,
+      `${correct}問中${total}問正解（正答率${percentage}%）${emoji}`,
+      `「${catMessage}」`,
+      ...(currentStreak > 0 ? [`🔥現在のストリーク：${currentStreak}日連続`] : []),
+      '',
+      '#基本情報技術者試験 #IT資格勉強',
+      'https://apps.apple.com/app/id6758322757',
+    ];
+    const text = lines.join('\n');
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+    Linking.openURL(url);
+  };
+
   // スケールに応じた動的スタイル
   const scoreFontSize = Math.round(56 * scale);
   const scoreLineHeight = Math.round(64 * scale);
-  const xpFontSize = Math.round(32 * scale);
+
   const s = (v: number) => Math.round(v * scale);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <Confetti visible={showConfetti} duration={3000} />
       <View style={[styles.content, { padding: s(spacing.xl), paddingBottom: s(spacing.xxl) }]}>
-        <Animated.View style={[styles.resultCardWrapper, { marginBottom: s(spacing.xl), marginTop: s(spacing.md) }, { transform: [{ scale: cardScale }] }]}>
-          <Card style={{ ...styles.resultCard, paddingTop: s(spacing.xxl + spacing.lg), paddingBottom: s(spacing.xxl) }}>
-            <View style={[styles.iconContainer, { marginBottom: s(spacing.md) }]}>
+        <Animated.View style={[styles.resultCardWrapper, { marginBottom: s(spacing.lg), marginTop: s(spacing.sm) }, { transform: [{ scale: cardScale }] }]}>
+          <Card style={{ ...styles.resultCard, paddingTop: s(spacing.xxl), paddingBottom: s(spacing.xl) }}>
+            <TouchableOpacity style={styles.closeButton} onPress={handleGoHome} activeOpacity={0.7}>
+              <Ionicons name="close" size={24} color={colors.textLight} />
+            </TouchableOpacity>
+            <View style={[styles.iconContainer, { marginBottom: s(spacing.sm) }]}>
               <Character
                 type={message.characterType}
                 size={characterSize}
@@ -110,23 +175,20 @@ export function ResultContent({ readyToAnimate }: Props) {
                 style={styles.characterIcon}
               />
             </View>
-            <Text variant="h2" style={{ ...styles.message, color: message.color, marginBottom: s(spacing.xl) }}>{message.text}</Text>
-            <Animated.View style={[styles.scoreContainer, { opacity: scoreOpacity, marginTop: s(spacing.md), marginBottom: s(spacing.sm), minHeight: s(70) }]}>
+            <Text variant="h2" style={{ ...styles.message, color: message.color, marginBottom: s(spacing.lg) }}>{message.text}</Text>
+            <Animated.View style={[styles.scoreContainer, { opacity: scoreOpacity, marginTop: s(spacing.sm), marginBottom: s(spacing.xs), minHeight: s(60) }]}>
               <Text variant="h1" style={{ ...styles.score, fontSize: scoreFontSize, lineHeight: scoreLineHeight }}>{correct}</Text>
               <Text variant="h3" style={{ ...styles.scoreDivider, lineHeight: scoreLineHeight }}>/</Text>
               <Text variant="h2" style={{ ...styles.totalScore, lineHeight: Math.round(40 * scale) }}>{total}</Text>
             </Animated.View>
-            <Text variant="body" color={colors.textLight} style={{ marginTop: s(spacing.sm) }}>
-              正答率 {percentage}%
-            </Text>
-            <View style={[styles.xpContainer, { marginTop: s(spacing.xl) }]}>
-              <Text variant="h3" style={styles.xpLabel}>獲得XP</Text>
+            <View style={[styles.xpRow, { marginTop: s(spacing.md) }]}>
+              <Text variant="body" color={colors.textLight}>獲得XP</Text>
               <View style={styles.xpValueContainer}>
-                <Text variant="h1" style={{ ...styles.xpValue, fontSize: xpFontSize }}>+{xp}</Text>
+                <Text variant="h3" style={styles.xpValue}>+{xp}</Text>
               </View>
             </View>
             {streakMessage && (
-              <View style={[styles.streakMessageContainer, { marginTop: s(spacing.lg) }]}>
+              <View style={[styles.streakMessageContainer, { marginTop: s(spacing.md) }]}>
                 <Character type="streak-celebration" size="small" animated={true} style={styles.streakCharacter} />
                 <Ionicons name="flame" size={20} color={colors.streak} style={styles.streakIcon} />
                 <Text variant="body" style={styles.streakMessage}>{streakMessage}</Text>
@@ -134,7 +196,10 @@ export function ResultContent({ readyToAnimate }: Props) {
             )}
           </Card>
         </Animated.View>
-        <View style={[styles.buttonContainer, { gap: s(spacing.md) }]}>
+        <View style={[styles.buttonContainer, { gap: s(spacing.sm) }]}>
+          <TouchableOpacity style={styles.shareButton} onPress={handleShareOnX} activeOpacity={0.8}>
+            <RNText style={styles.shareButtonText}>𝕏 でシェア</RNText>
+          </TouchableOpacity>
           <Button title="もう一度挑戦" onPress={handleRetry} variant="ghost" style={styles.button} />
           <Button title="ホームに戻る" onPress={handleGoHome} style={styles.button} />
         </View>
@@ -147,7 +212,8 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
   content: { flex: 1, justifyContent: 'center' },
   resultCardWrapper: {},
-  resultCard: { alignItems: 'center', paddingHorizontal: spacing.xl, overflow: 'visible' as any },
+  resultCard: { alignItems: 'center', paddingHorizontal: spacing.xl, overflow: 'visible' as any, position: 'relative' as const },
+  closeButton: { position: 'absolute' as const, top: spacing.md, right: spacing.md, zIndex: 1, padding: spacing.xs },
   iconContainer: { alignItems: 'center', justifyContent: 'center' },
   characterIcon: { marginBottom: spacing.xs },
   message: {},
@@ -155,14 +221,27 @@ const styles = StyleSheet.create({
   score: { color: colors.primary, fontWeight: 'bold' },
   scoreDivider: { marginHorizontal: spacing.sm, color: colors.textLight },
   totalScore: { color: colors.textLight },
-  xpContainer: { alignItems: 'center' },
-  xpLabel: { color: colors.textLight, marginBottom: spacing.xs },
+  xpRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
   xpValueContainer: { backgroundColor: colors.secondary + '20', borderRadius: borderRadius.full, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
   xpValue: { color: colors.secondary, fontWeight: 'bold' },
   streakMessageContainer: { backgroundColor: colors.streak + '20', borderRadius: borderRadius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   streakCharacter: { marginRight: spacing.xs },
   streakIcon: { marginRight: spacing.xs },
   streakMessage: { color: colors.streak, fontWeight: '600' },
+  shareButton: {
+    backgroundColor: '#000000',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    borderRadius: borderRadius.md,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    minHeight: 48,
+  },
+  shareButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold' as const,
+  },
   buttonContainer: {},
   button: { width: '100%' },
 });
