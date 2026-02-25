@@ -226,7 +226,7 @@ export const useStreak = () => {
           date: yesterday,
           questions_answered: 0,
           questions_correct: 0,
-        }, { onConflict: 'user_id,date' });
+        }, { onConflict: 'user_id,date', ignoreDuplicates: true });
     } catch (err: any) {
       setError(err.message);
       console.error('Error reviving streak:', err);
