@@ -24,6 +24,29 @@ const getYesterdayLocal = (): string => {
   return `${year}-${month}-${day}`;
 };
 
+// YYYY-MM-DD文字列間の日数差を計算（タイムゾーン安全）
+const getDaysBetween = (dateStr1: string, dateStr2: string): number => {
+  const [y1, m1, d1] = dateStr1.split('-').map(Number);
+  const [y2, m2, d2] = dateStr2.split('-').map(Number);
+  const date1 = new Date(y1, m1 - 1, d1);
+  const date2 = new Date(y2, m2 - 1, d2);
+  return Math.round((date2.getTime() - date1.getTime()) / (1000 * 60 * 60 * 24));
+};
+
+// YYYY-MM-DD文字列の翌日を取得
+const getNextDay = (dateStr: string): string => {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  date.setDate(date.getDate() + 1);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+/** ストリーク復活可能な最大日数 */
+const MAX_REVIVE_DAYS = 3;
+
 export const useStreak = () => {
   const { user, loading: authLoading } = useAuth();
   const [streak, setStreak] = useState<Streak | null>(null);
@@ -57,14 +80,16 @@ export const useStreak = () => {
         const yesterday = getYesterdayLocal();
         const lastDate = data.last_completed_date;
         if (lastDate !== today && lastDate !== yesterday) {
-          // 途切れているのでDBの current_streak を 0 に更新し、復活用に previous_streak を保存
+          const missedDays = getDaysBetween(lastDate, yesterday);
+          // 復活可能範囲内なら previous_streak を保存、超えていたら 0（復活不可）
+          const savePreviousStreak = missedDays <= MAX_REVIVE_DAYS ? data.current_streak : 0;
           const { data: updated } = await supabase
             .from('streaks')
-            .update({ current_streak: 0, previous_streak: data.current_streak })
+            .update({ current_streak: 0, previous_streak: savePreviousStreak })
             .eq('user_id', user.id)
             .select()
             .single();
-          streakToSet = updated ?? { ...data, current_streak: 0, previous_streak: data.current_streak };
+          streakToSet = updated ?? { ...data, current_streak: 0, previous_streak: savePreviousStreak };
         }
       }
 
@@ -117,15 +142,10 @@ export const useStreak = () => {
       }
 
       // 前回の日付を確認
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const year = yesterday.getFullYear();
-      const month = String(yesterday.getMonth() + 1).padStart(2, '0');
-      const day = String(yesterday.getDate()).padStart(2, '0');
-      const yesterdayStr = `${year}-${month}-${day}`;
+      const yesterdayStr = getYesterdayLocal();
 
       let newCurrentStreak: number;
-      
+
       if (lastDate === yesterdayStr) {
         // 連続している場合
         newCurrentStreak = currentStreak.current_streak + 1;
@@ -139,13 +159,14 @@ export const useStreak = () => {
         newCurrentStreak
       );
 
-      // 更新
+      // 更新（previous_streak もクリアして復活途中の状態を解消）
       const { data: updatedStreak } = await supabase
         .from('streaks')
         .update({
           current_streak: newCurrentStreak,
           longest_streak: newLongestStreak,
           last_completed_date: today,
+          previous_streak: 0,
         })
         .eq('user_id', user.id)
         .select()
@@ -166,10 +187,9 @@ export const useStreak = () => {
   };
 
   /**
-   * ストリークを復活させる（リワード広告視聴後に呼ぶ）
-   * previous_streak から連続日数を復元し、last_completed_date を昨日に設定する。
-   * これにより、次にクイズを解いた時に updateStreak() が連続と判定して +1 される。
-   * また、昨日の daily_progress レコードを作成し、週間カレンダーに反映させる。
+   * ストリークを1日分復活させる（リワード広告視聴後に呼ぶ）
+   * last_completed_date の翌日を埋めて1日前進させる。
+   * 全日分埋まった（last_completed_date === 昨日）場合は current_streak を復元する。
    */
   const reviveStreak = async () => {
     try {
@@ -184,46 +204,49 @@ export const useStreak = () => {
         .eq('user_id', user.id)
         .single();
 
-      if (!currentStreak) {
-        const { data: newStreak } = await supabase
+      if (!currentStreak || !currentStreak.last_completed_date) return;
+
+      // 復活対象がない場合は何もしない
+      if (currentStreak.previous_streak <= 0) return;
+
+      const missedDays = getDaysBetween(currentStreak.last_completed_date, yesterday);
+      if (missedDays <= 0 || missedDays > MAX_REVIVE_DAYS) return;
+
+      // 埋める日 = last_completed_date の翌日
+      const fillDate = getNextDay(currentStreak.last_completed_date);
+
+      if (missedDays === 1) {
+        // 最後の1日 → 全復元
+        const { data: updatedStreak } = await supabase
           .from('streaks')
-          .insert({
-            user_id: user.id,
-            current_streak: 1,
-            longest_streak: 1,
+          .update({
+            current_streak: currentStreak.previous_streak,
             last_completed_date: yesterday,
+            previous_streak: 0,
           })
+          .eq('user_id', user.id)
           .select()
           .single();
-        setStreak(newStreak);
-        return;
+        setStreak(updatedStreak);
+      } else {
+        // まだ残りあり → last_completed_date を1日前進
+        const { data: updatedStreak } = await supabase
+          .from('streaks')
+          .update({
+            last_completed_date: fillDate,
+          })
+          .eq('user_id', user.id)
+          .select()
+          .single();
+        setStreak(updatedStreak);
       }
 
-      // previous_streak があればその値を復元、なければ 1
-      const restoredStreak = currentStreak.previous_streak > 0
-        ? currentStreak.previous_streak
-        : 1;
-
-      const { data: updatedStreak } = await supabase
-        .from('streaks')
-        .update({
-          current_streak: restoredStreak,
-          last_completed_date: yesterday,
-          previous_streak: 0,
-          // longest_streak は変更しない（過去の最長記録を維持）
-        })
-        .eq('user_id', user.id)
-        .select()
-        .single();
-
-      setStreak(updatedStreak);
-
-      // 昨日の daily_progress レコードを作成（週間カレンダーに反映させるため）
+      // 埋めた日の daily_progress レコードを作成（週間カレンダーに反映）
       await supabase
         .from('daily_progress')
         .upsert({
           user_id: user.id,
-          date: yesterday,
+          date: fillDate,
           questions_answered: 0,
           questions_correct: 0,
         }, { onConflict: 'user_id,date', ignoreDuplicates: true });
@@ -231,6 +254,16 @@ export const useStreak = () => {
       setError(err.message);
       console.error('Error reviving streak:', err);
     }
+  };
+
+  // 復活に必要な残り広告視聴回数を算出
+  const getReviveDaysRemaining = (): number => {
+    if (!streak || streak.previous_streak <= 0 || !streak.last_completed_date) return 0;
+    if (streak.current_streak > 0) return 0;
+    const yesterday = getYesterdayLocal();
+    const missedDays = getDaysBetween(streak.last_completed_date, yesterday);
+    if (missedDays <= 0 || missedDays > MAX_REVIVE_DAYS) return 0;
+    return missedDays;
   };
 
   useEffect(() => {
@@ -245,7 +278,7 @@ export const useStreak = () => {
     if (!user) return;
 
     let lastCheckedDate = getTodayLocal();
-    
+
     // 1分ごとに日付をチェック
     const interval = setInterval(() => {
       const today = getTodayLocal();
@@ -261,7 +294,9 @@ export const useStreak = () => {
   return {
     currentStreak: streak?.current_streak ?? 0,
     longestStreak: streak?.longest_streak ?? 0,
+    previousStreak: streak?.previous_streak ?? 0,
     lastCompletedDate: streak?.last_completed_date,
+    reviveDaysRemaining: getReviveDaysRemaining(),
     loading,
     error,
     updateStreak,
@@ -270,4 +305,3 @@ export const useStreak = () => {
     refetch: fetchStreak,
   };
 };
-
