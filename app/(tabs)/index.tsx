@@ -25,7 +25,7 @@ const BannerAdFixed = isExpoGo
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { currentStreak, loading: streakLoading, refetch: refetchStreak, reviveStreak } = useStreak();
+  const { currentStreak, previousStreak: savedPreviousStreak, reviveDaysRemaining, loading: streakLoading, refetch: refetchStreak, reviveStreak } = useStreak();
   const { 
     todayProgress, 
     dailyGoal, 
@@ -373,10 +373,12 @@ export default function HomeScreen() {
               {!isExpoGo && (
                 <Suspense fallback={null}>
                   <HomeAdSection
-                    currentStreak={currentStreak}
-                    onEarnedReward={() => {
-                      reviveStreak();
+                    reviveDaysRemaining={reviveDaysRemaining}
+                    previousStreak={savedPreviousStreak}
+                    onEarnedReward={async () => {
+                      await reviveStreak();
                       refetchStreak();
+                      fetchWeeklyProgress();
                     }}
                   />
                 </Suspense>

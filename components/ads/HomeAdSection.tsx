@@ -1,8 +1,8 @@
 /**
- * ホーム画面用の広告セクション（ストリーク復活リワード広告ボタンのみ。バナーはタブレイアウトで固定表示）
+ * ホーム画面用の広告セクション（ストリーク復活リワード広告ボタン）
  * Expo Go ではこのコンポーネントはマウントしないこと（react-native-google-mobile-ads が使えないため）
  */
-import { StyleSheet, TouchableOpacity, Platform, Alert } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Platform, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRewardedAd } from 'react-native-google-mobile-ads';
 import { useEffect } from 'react';
@@ -11,11 +11,12 @@ import { colors, spacing, borderRadius } from '../../constants/theme';
 import { adUnitIds } from '../../lib/ads';
 
 type Props = {
-  currentStreak: number;
+  reviveDaysRemaining: number;
+  previousStreak: number;
   onEarnedReward: () => void;
 };
 
-export function HomeAdSection({ currentStreak, onEarnedReward }: Props) {
+export function HomeAdSection({ reviveDaysRemaining, previousStreak, onEarnedReward }: Props) {
   const rewardedAd = useRewardedAd(Platform.OS === 'web' ? null : adUnitIds.rewarded);
 
   useEffect(() => {
@@ -37,44 +38,83 @@ export function HomeAdSection({ currentStreak, onEarnedReward }: Props) {
   };
 
   if (Platform.OS === 'web') return null;
+  if (reviveDaysRemaining <= 0) return null;
 
   return (
-    <>
-      {/* ストリークが切れている場合のみ「広告で復活」ボタン */}
-      {currentStreak === 0 && (
-        <TouchableOpacity
-          style={styles.reviveStreakButton}
-          onPress={handleRevivePress}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="videocam-outline" size={20} color={colors.primary} style={styles.reviveStreakIcon} />
-          <Text variant="body" style={styles.reviveStreakText}>
-            広告を見てストリークを復活
-          </Text>
-        </TouchableOpacity>
-      )}
-    </>
+    <View style={styles.container}>
+      <Text variant="body" style={styles.motivationText}>
+        {previousStreak}日連続の記録を復活させよう！
+      </Text>
+      <View style={styles.progressRow}>
+        {Array.from({ length: reviveDaysRemaining }).map((_, i) => (
+          <View key={`remaining-${i}`} style={styles.dotEmpty} />
+        ))}
+      </View>
+      <Text variant="caption" style={styles.remainingText}>
+        あと {reviveDaysRemaining} 回広告を見ると復活
+      </Text>
+      <TouchableOpacity
+        style={styles.reviveButton}
+        onPress={handleRevivePress}
+        activeOpacity={0.7}
+      >
+        <Ionicons name="videocam-outline" size={20} color="#fff" style={styles.reviveIcon} />
+        <Text variant="body" style={styles.reviveButtonText}>
+          広告を見て1日分回復
+        </Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  reviveStreakButton: {
-    flexDirection: 'row',
+  container: {
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background,
-    paddingVertical: spacing.md,
+    backgroundColor: colors.streak + '15',
+    paddingVertical: spacing.lg,
     paddingHorizontal: spacing.lg,
     marginTop: spacing.md,
     borderRadius: borderRadius.md,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: colors.streak + '30',
   },
-  reviveStreakIcon: {
+  motivationText: {
+    color: colors.streak,
+    fontWeight: '700',
+    marginBottom: spacing.sm,
+  },
+  progressRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  dotEmpty: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: colors.streak,
+    backgroundColor: 'transparent',
+  },
+  remainingText: {
+    color: colors.textLight,
+    marginBottom: spacing.md,
+  },
+  reviveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.streak,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    borderRadius: borderRadius.md,
+    width: '100%',
+  },
+  reviveIcon: {
     marginRight: spacing.sm,
   },
-  reviveStreakText: {
-    color: colors.primary,
-    fontWeight: '600',
+  reviveButtonText: {
+    color: '#fff',
+    fontWeight: '700',
   },
 });
