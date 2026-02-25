@@ -57,14 +57,14 @@ export const useStreak = () => {
         const yesterday = getYesterdayLocal();
         const lastDate = data.last_completed_date;
         if (lastDate !== today && lastDate !== yesterday) {
-          // 途切れているのでDBの current_streak を 0 に更新
+          // 途切れているのでDBの current_streak を 0 に更新し、復活用に previous_streak を保存
           const { data: updated } = await supabase
             .from('streaks')
-            .update({ current_streak: 0 })
+            .update({ current_streak: 0, previous_streak: data.current_streak })
             .eq('user_id', user.id)
             .select()
             .single();
-          streakToSet = updated ?? { ...data, current_streak: 0 };
+          streakToSet = updated ?? { ...data, current_streak: 0, previous_streak: data.current_streak };
         }
       }
 
@@ -167,14 +167,16 @@ export const useStreak = () => {
 
   /**
    * ストリークを復活させる（リワード広告視聴後に呼ぶ）
-   * current_streak を 1 に、last_completed_date を今日に設定する
+   * previous_streak から連続日数を復元し、last_completed_date を昨日に設定する。
+   * これにより、次にクイズを解いた時に updateStreak() が連続と判定して +1 される。
+   * また、昨日の daily_progress レコードを作成し、週間カレンダーに反映させる。
    */
   const reviveStreak = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('ユーザーが認証されていません');
 
-      const today = getTodayLocal();
+      const yesterday = getYesterdayLocal();
 
       const { data: currentStreak } = await supabase
         .from('streaks')
@@ -189,7 +191,7 @@ export const useStreak = () => {
             user_id: user.id,
             current_streak: 1,
             longest_streak: 1,
-            last_completed_date: today,
+            last_completed_date: yesterday,
           })
           .select()
           .single();
@@ -197,11 +199,17 @@ export const useStreak = () => {
         return;
       }
 
+      // previous_streak があればその値を復元、なければ 1
+      const restoredStreak = currentStreak.previous_streak > 0
+        ? currentStreak.previous_streak
+        : 1;
+
       const { data: updatedStreak } = await supabase
         .from('streaks')
         .update({
-          current_streak: 1,
-          last_completed_date: today,
+          current_streak: restoredStreak,
+          last_completed_date: yesterday,
+          previous_streak: 0,
           // longest_streak は変更しない（過去の最長記録を維持）
         })
         .eq('user_id', user.id)
@@ -209,6 +217,16 @@ export const useStreak = () => {
         .single();
 
       setStreak(updatedStreak);
+
+      // 昨日の daily_progress レコードを作成（週間カレンダーに反映させるため）
+      await supabase
+        .from('daily_progress')
+        .upsert({
+          user_id: user.id,
+          date: yesterday,
+          questions_answered: 0,
+          questions_correct: 0,
+        }, { onConflict: 'user_id,date' });
     } catch (err: any) {
       setError(err.message);
       console.error('Error reviving streak:', err);

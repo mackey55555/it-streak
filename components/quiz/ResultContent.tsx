@@ -1,7 +1,7 @@
 /**
  * クイズ結果の表示コンテンツ（広告表示の有無に依存しない共通UI）
  */
-import { View, StyleSheet, Animated } from 'react-native';
+import { View, StyleSheet, Animated, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +20,10 @@ export function ResultContent({ readyToAnimate }: Props) {
   const params = useLocalSearchParams<{ correct: string; total: string }>();
   const { currentStreak, refetch: refetchStreak } = useStreak();
   const [previousStreak, setPreviousStreak] = useState(0);
+  const { height: screenHeight } = useWindowDimensions();
+
+  // 画面高さに応じたスケール（基準: 736pt = iPhone 8 Plus）
+  const scale = Math.min(1, screenHeight / 736);
 
   const correct = parseInt(params.correct || '0', 10);
   const total = parseInt(params.total || '0', 10);
@@ -77,42 +81,52 @@ export function ResultContent({ readyToAnimate }: Props) {
   };
 
   const message = getMessage();
+  // 小画面では characterSize を1段階下げる
+  const characterSize = scale < 0.85
+    ? (message.characterSize === 'large' ? 'medium' : 'small')
+    : message.characterSize;
   const streakMessage = currentStreak > 1 ? `${currentStreak}日連続達成中！` : null;
 
   const handleGoHome = () => router.replace('/(tabs)');
   const handleRetry = () => router.replace('/quiz');
 
+  // スケールに応じた動的スタイル
+  const scoreFontSize = Math.round(56 * scale);
+  const scoreLineHeight = Math.round(64 * scale);
+  const xpFontSize = Math.round(32 * scale);
+  const s = (v: number) => Math.round(v * scale);
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <Confetti visible={showConfetti} duration={3000} />
-      <View style={styles.content}>
-        <Animated.View style={[styles.resultCardWrapper, { transform: [{ scale: cardScale }] }]}>
-          <Card style={styles.resultCard}>
-            <View style={styles.iconContainer}>
+      <View style={[styles.content, { padding: s(spacing.xl), paddingBottom: s(spacing.xxl) }]}>
+        <Animated.View style={[styles.resultCardWrapper, { marginBottom: s(spacing.xl), marginTop: s(spacing.md) }, { transform: [{ scale: cardScale }] }]}>
+          <Card style={{ ...styles.resultCard, paddingTop: s(spacing.xxl + spacing.lg), paddingBottom: s(spacing.xxl) }}>
+            <View style={[styles.iconContainer, { marginBottom: s(spacing.md) }]}>
               <Character
                 type={message.characterType}
-                size={message.characterSize}
+                size={characterSize}
                 animated={true}
                 style={styles.characterIcon}
               />
             </View>
-            <Text variant="h2" style={[styles.message, { color: message.color }]}>{message.text}</Text>
-            <Animated.View style={[styles.scoreContainer, { opacity: scoreOpacity }]}>
-              <Text variant="h1" style={styles.score}>{correct}</Text>
-              <Text variant="h3" style={styles.scoreDivider}>/</Text>
-              <Text variant="h2" style={styles.totalScore}>{total}</Text>
+            <Text variant="h2" style={{ ...styles.message, color: message.color, marginBottom: s(spacing.xl) }}>{message.text}</Text>
+            <Animated.View style={[styles.scoreContainer, { opacity: scoreOpacity, marginTop: s(spacing.md), marginBottom: s(spacing.sm), minHeight: s(70) }]}>
+              <Text variant="h1" style={{ ...styles.score, fontSize: scoreFontSize, lineHeight: scoreLineHeight }}>{correct}</Text>
+              <Text variant="h3" style={{ ...styles.scoreDivider, lineHeight: scoreLineHeight }}>/</Text>
+              <Text variant="h2" style={{ ...styles.totalScore, lineHeight: Math.round(40 * scale) }}>{total}</Text>
             </Animated.View>
-            <Text variant="body" color={colors.textLight} style={styles.percentage}>
+            <Text variant="body" color={colors.textLight} style={{ marginTop: s(spacing.sm) }}>
               正答率 {percentage}%
             </Text>
-            <View style={styles.xpContainer}>
+            <View style={[styles.xpContainer, { marginTop: s(spacing.xl) }]}>
               <Text variant="h3" style={styles.xpLabel}>獲得XP</Text>
               <View style={styles.xpValueContainer}>
-                <Text variant="h1" style={styles.xpValue}>+{xp}</Text>
+                <Text variant="h1" style={{ ...styles.xpValue, fontSize: xpFontSize }}>+{xp}</Text>
               </View>
             </View>
             {streakMessage && (
-              <View style={styles.streakMessageContainer}>
+              <View style={[styles.streakMessageContainer, { marginTop: s(spacing.lg) }]}>
                 <Character type="streak-celebration" size="small" animated={true} style={styles.streakCharacter} />
                 <Ionicons name="flame" size={20} color={colors.streak} style={styles.streakIcon} />
                 <Text variant="body" style={styles.streakMessage}>{streakMessage}</Text>
@@ -120,7 +134,7 @@ export function ResultContent({ readyToAnimate }: Props) {
             )}
           </Card>
         </Animated.View>
-        <View style={styles.buttonContainer}>
+        <View style={[styles.buttonContainer, { gap: s(spacing.md) }]}>
           <Button title="もう一度挑戦" onPress={handleRetry} variant="ghost" style={styles.button} />
           <Button title="ホームに戻る" onPress={handleGoHome} style={styles.button} />
         </View>
@@ -131,25 +145,24 @@ export function ResultContent({ readyToAnimate }: Props) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.surface },
-  content: { flex: 1, padding: spacing.xl, justifyContent: 'center', paddingBottom: spacing.xxl },
-  resultCardWrapper: { marginBottom: spacing.xl, marginTop: spacing.md },
-  resultCard: { alignItems: 'center', paddingTop: spacing.xxl + spacing.lg, paddingBottom: spacing.xxl, paddingHorizontal: spacing.xl, overflow: 'visible' as any },
-  iconContainer: { marginBottom: spacing.md, alignItems: 'center', justifyContent: 'center' },
+  content: { flex: 1, justifyContent: 'center' },
+  resultCardWrapper: {},
+  resultCard: { alignItems: 'center', paddingHorizontal: spacing.xl, overflow: 'visible' as any },
+  iconContainer: { alignItems: 'center', justifyContent: 'center' },
   characterIcon: { marginBottom: spacing.xs },
-  message: { marginBottom: spacing.xl },
-  scoreContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: spacing.md, marginBottom: spacing.sm, minHeight: 70 },
-  score: { fontSize: 56, color: colors.primary, fontWeight: 'bold', lineHeight: 64 },
-  scoreDivider: { marginHorizontal: spacing.sm, color: colors.textLight, lineHeight: 64 },
-  totalScore: { color: colors.textLight, lineHeight: 40 },
-  percentage: { marginTop: spacing.sm },
-  xpContainer: { marginTop: spacing.xl, alignItems: 'center' },
+  message: {},
+  scoreContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  score: { color: colors.primary, fontWeight: 'bold' },
+  scoreDivider: { marginHorizontal: spacing.sm, color: colors.textLight },
+  totalScore: { color: colors.textLight },
+  xpContainer: { alignItems: 'center' },
   xpLabel: { color: colors.textLight, marginBottom: spacing.xs },
   xpValueContainer: { backgroundColor: colors.secondary + '20', borderRadius: borderRadius.full, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
-  xpValue: { color: colors.secondary, fontSize: 32, fontWeight: 'bold' },
-  streakMessageContainer: { marginTop: spacing.lg, backgroundColor: colors.streak + '20', borderRadius: borderRadius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  xpValue: { color: colors.secondary, fontWeight: 'bold' },
+  streakMessageContainer: { backgroundColor: colors.streak + '20', borderRadius: borderRadius.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   streakCharacter: { marginRight: spacing.xs },
   streakIcon: { marginRight: spacing.xs },
   streakMessage: { color: colors.streak, fontWeight: '600' },
-  buttonContainer: { gap: spacing.md },
+  buttonContainer: {},
   button: { width: '100%' },
 });
