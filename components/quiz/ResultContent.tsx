@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Card, Text, Confetti, Character } from '../ui';
-import { colors, spacing, borderRadius } from '../../constants/theme';
+import { colors, spacing, borderRadius, fontSizes } from '../../constants/theme';
 import { notificationSuccess } from '../../lib/haptics';
 import { useStreak } from '../../hooks/useStreak';
 import { useEffect, useState, useRef } from 'react';
@@ -164,7 +164,7 @@ export function ResultContent({ readyToAnimate }: Props) {
       <View style={[styles.content, { padding: s(spacing.xl), paddingBottom: s(spacing.xxl) }]}>
         <Animated.View style={[styles.resultCardWrapper, { marginBottom: s(spacing.lg), marginTop: s(spacing.sm) }, { transform: [{ scale: cardScale }] }]}>
           <Card style={{ ...styles.resultCard, paddingTop: s(spacing.xxl), paddingBottom: s(spacing.xl) }}>
-            <TouchableOpacity style={styles.closeButton} onPress={handleGoHome} activeOpacity={0.7}>
+            <TouchableOpacity style={styles.closeButton} onPress={handleGoHome} activeOpacity={0.7} accessibilityLabel="閉じる" accessibilityRole="button">
               <Ionicons name="close" size={24} color={colors.textLight} />
             </TouchableOpacity>
             <View style={[styles.iconContainer, { marginBottom: s(spacing.sm) }]}>
@@ -197,7 +197,7 @@ export function ResultContent({ readyToAnimate }: Props) {
           </Card>
         </Animated.View>
         <View style={[styles.buttonContainer, { gap: s(spacing.sm) }]}>
-          <TouchableOpacity style={styles.shareButton} onPress={handleShareOnX} activeOpacity={0.8}>
+          <TouchableOpacity style={styles.shareButton} onPress={handleShareOnX} activeOpacity={0.8} accessibilityLabel="Xでシェア" accessibilityRole="button">
             <RNText style={styles.shareButtonText}>𝕏 でシェア</RNText>
           </TouchableOpacity>
           <Button title="もう一度挑戦" onPress={handleRetry} variant="ghost" style={styles.button} />
@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
   },
   shareButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: fontSizes.md,
     fontWeight: 'bold' as const,
   },
   buttonContainer: {},
