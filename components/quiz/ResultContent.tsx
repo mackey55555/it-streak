@@ -140,7 +140,7 @@ export function ResultContent({ readyToAnimate }: Props) {
     ]);
     const lines = [
       `IT Streakでの学習記録📚`,
-      `${correct}問中${total}問正解（正答率${percentage}%）${emoji}`,
+      `${total}問中${correct}問正解（正答率${percentage}%）${emoji}`,
       `「${catMessage}」`,
       ...(currentStreak > 0 ? [`🔥現在のストリーク：${currentStreak}日連続`] : []),
       '',
