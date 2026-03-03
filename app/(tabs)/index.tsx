@@ -417,7 +417,7 @@ export default function HomeScreen() {
               <View style={styles.progressCaptionRow}>
                 <Ionicons name="checkmark-circle" size={16} color={colors.primary} style={styles.captionIcon} />
                 <Text variant="caption" style={styles.progressCaption}>
-                  今日の目標達成！すてきだにゃ！
+                  今日の目標達成！素晴らしい！
                 </Text>
               </View>
             ) : (
