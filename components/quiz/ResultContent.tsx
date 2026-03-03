@@ -198,7 +198,7 @@ export function ResultContent({ readyToAnimate }: Props) {
         </Animated.View>
         <View style={[styles.buttonContainer, { gap: s(spacing.sm) }]}>
           <TouchableOpacity style={styles.shareButton} onPress={handleShareOnX} activeOpacity={0.8} accessibilityLabel="Xでシェア" accessibilityRole="button">
-            <RNText style={styles.shareButtonText}>𝕏 でシェア</RNText>
+            <RNText style={styles.shareButtonText}>𝕏 結果をシェア</RNText>
           </TouchableOpacity>
           <Button title="もう一度挑戦" onPress={handleRetry} variant="ghost" style={styles.button} />
           <Button title="ホームに戻る" onPress={handleGoHome} style={styles.button} />
