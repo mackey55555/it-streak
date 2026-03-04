@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { Alert } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as Updates from 'expo-updates';
@@ -79,26 +78,18 @@ export default function RootLayout() {
     }
   }, [user, loading]);
 
-  // OTAアップデートをチェック（デバッグ用Alert付き）
+  // OTAアップデートをチェックし、あれば即時適用
   useEffect(() => {
     if (isExpoGo) return;
     async function checkForOTAUpdate() {
       try {
-        const currentId = Updates.updateId ?? 'embedded';
-        const channel = Updates.channel ?? 'unknown';
-        const rtVersion = Updates.runtimeVersion ?? 'unknown';
-
         const update = await Updates.checkForUpdateAsync();
         if (update.isAvailable) {
-          Alert.alert('OTA', `アップデート検出\ncurrent: ${currentId}\nchannel: ${channel}\nruntime: ${rtVersion}`);
-          const result = await Updates.fetchUpdateAsync();
-          Alert.alert('OTA', `ダウンロード完了: ${result.isNew ? '新規' : '既存'}\nリロードします`);
+          await Updates.fetchUpdateAsync();
           await Updates.reloadAsync();
-        } else {
-          Alert.alert('OTA', `最新です\ncurrent: ${currentId}\nchannel: ${channel}\nruntime: ${rtVersion}`);
         }
-      } catch (e: any) {
-        Alert.alert('OTA Error', e.message ?? String(e));
+      } catch (e) {
+        console.log('OTA update check failed:', e);
       }
     }
     checkForOTAUpdate();

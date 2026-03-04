@@ -422,7 +422,7 @@ export default function HomeScreen() {
               </View>
             ) : (
               <Text variant="caption" style={styles.progressCaption}>
-                あと{remaining}問で目標達成にゃん！
+                あと{remaining}問で今日の目標達成！
               </Text>
             )}
           </Card>
