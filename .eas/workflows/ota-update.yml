@@ -5,22 +5,9 @@ on:
     branches: [main]
 
 jobs:
-  fingerprint_check:
-    type: fingerprint
-    params:
-      profile: production
-
   ota_update:
-    needs: [fingerprint_check]
-    if: ${{ needs.fingerprint_check.outputs.fingerprint_is_matched == 'true' }}
     type: update
     params:
       branch: production
       platform: ios
-      message: "OTA: ${{ github.ref_name }} - ${{ github.event.head_commit.message }}"
-
-  notify_build_needed:
-    needs: [fingerprint_check]
-    if: ${{ needs.fingerprint_check.outputs.fingerprint_is_matched == 'false' }}
-    steps:
-      - run: echo "Fingerprint mismatch - new build required before OTA update"
+      message: "OTA: ${{ github.event.head_commit.message }}"
