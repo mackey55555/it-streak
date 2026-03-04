@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Updates from 'expo-updates';
 import Constants from 'expo-constants';
 import { useAuth } from '../hooks/useAuth';
 import { usePushNotifications } from '../hooks/usePushNotifications';
@@ -76,6 +77,23 @@ export default function RootLayout() {
       registerForPushNotifications();
     }
   }, [user, loading]);
+
+  // OTAアップデートをチェックし、あれば即時適用
+  useEffect(() => {
+    if (isExpoGo) return;
+    async function checkForOTAUpdate() {
+      try {
+        const update = await Updates.checkForUpdateAsync();
+        if (update.isAvailable) {
+          await Updates.fetchUpdateAsync();
+          await Updates.reloadAsync();
+        }
+      } catch (e) {
+        console.log('OTA update check failed:', e);
+      }
+    }
+    checkForOTAUpdate();
+  }, []);
 
   // AdMob 初期化と iOS ATT リクエスト（Development Build 時のみ。Expo Go ではネイティブモジュールがないためスキップ）
   useEffect(() => {
