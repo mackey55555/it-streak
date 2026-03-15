@@ -16,6 +16,7 @@ on:
 jobs:
   ota_update_default:
     type: update
+    environment: production
     params:
       branch: production
       platform: ios
