@@ -35,7 +35,7 @@ const variantConfig = {
     splashIcon: './assets/ipass/splash-icon.png',
     bundleIdentifier: 'com.techguild.ipass',
     packageName: 'com.techguild.ipass',
-    projectId: process.env.EXPO_PUBLIC_IPASS_PROJECT_ID || '',
+    projectId: process.env.EXPO_PUBLIC_IPASS_PROJECT_ID || '54b01ca8-d066-435c-b1cc-8805b7ec4acc',
     admobIosAppId: process.env.ADMOB_IPASS_IOS_APP_ID || 'ca-app-pub-3556606235552037~5046764657',
     admobAndroidAppId: process.env.ADMOB_IPASS_ANDROID_APP_ID || 'ca-app-pub-3556606235552037~5046764658',
   },
