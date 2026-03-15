@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { View, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -38,6 +38,27 @@ export default function QuizScreen() {
   const [currentExplanation, setCurrentExplanation] = useState<string>('');
   const [showConfetti, setShowConfetti] = useState(false);
   const resultBannerScale = useRef(new Animated.Value(0)).current;
+
+  // 選択肢をシャッフルして表示（問題ごとに固定）
+  const shuffledChoices = useMemo(() => {
+    if (!currentQuestion) return [];
+    const raw = [
+      { originalLetter: 'A', text: currentQuestion.choice_a },
+      { originalLetter: 'B', text: currentQuestion.choice_b },
+      { originalLetter: 'C', text: currentQuestion.choice_c },
+      { originalLetter: 'D', text: currentQuestion.choice_d },
+    ];
+    for (let i = raw.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [raw[i], raw[j]] = [raw[j], raw[i]];
+    }
+    const labels = ['A', 'B', 'C', 'D'];
+    return raw.map((c, idx) => ({
+      displayLetter: labels[idx],
+      originalLetter: c.originalLetter,
+      text: c.text,
+    }));
+  }, [currentQuestion?.id]);
 
   // 初回読み込み
   useEffect(() => {
@@ -212,12 +233,6 @@ export default function QuizScreen() {
   }
 
   const progress = totalQuestions > 0 ? (currentIndex + 1) / totalQuestions : 0;
-  const choices = [
-    { letter: 'A', text: currentQuestion.choice_a },
-    { letter: 'B', text: currentQuestion.choice_b },
-    { letter: 'C', text: currentQuestion.choice_c },
-    { letter: 'D', text: currentQuestion.choice_d },
-  ];
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -254,22 +269,22 @@ export default function QuizScreen() {
 
         {/* 選択肢 */}
         <View style={styles.choicesContainer}>
-          {choices.map((choice) => (
+          {shuffledChoices.map((choice) => (
             <TouchableOpacity
-              key={choice.letter}
-              style={getChoiceStyle(choice.letter)}
-              onPress={() => handleChoiceSelect(choice.letter)}
+              key={choice.originalLetter}
+              style={getChoiceStyle(choice.originalLetter)}
+              onPress={() => handleChoiceSelect(choice.originalLetter)}
               disabled={answerState !== 'unanswered'}
               activeOpacity={0.7}
             >
-              <Text 
-                variant="body" 
+              <Text
+                variant="body"
                 style={[
                   styles.choiceText,
-                  selectedChoice === choice.letter && answerState === 'unanswered' && styles.choiceTextSelected,
+                  selectedChoice === choice.originalLetter && answerState === 'unanswered' && styles.choiceTextSelected,
                 ]}
               >
-                {choice.letter}: {choice.text}
+                {choice.displayLetter}: {choice.text}
               </Text>
             </TouchableOpacity>
           ))}
