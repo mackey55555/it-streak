@@ -3,6 +3,15 @@ name: OTA Update (Production)
 on:
   push:
     branches: [main]
+    paths:
+      - 'app/**'
+      - 'components/**'
+      - 'constants/**'
+      - 'hooks/**'
+      - 'lib/**'
+      - 'types/**'
+      - 'assets/**'
+      - 'package.json'
 
 jobs:
   ota_update:
