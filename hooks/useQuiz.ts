@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { IS_IPASS, IPASS_EXAM_ID } from '../lib/variant';
 import { Database } from '../types/database';
 
 type Question = Database['public']['Tables']['questions']['Row'];
@@ -39,13 +40,17 @@ export const useQuiz = (questionCount: number = 5) => {
         throw new Error('ユーザーが認証されていません');
       }
 
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('selected_exam_id')
-        .eq('id', user.id)
-        .single();
-
-      const examId = profile?.selected_exam_id;
+      let examId: string | null;
+      if (IS_IPASS) {
+        examId = IPASS_EXAM_ID;
+      } else {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('selected_exam_id')
+          .eq('id', user.id)
+          .single();
+        examId = profile?.selected_exam_id ?? null;
+      }
       if (!examId) {
         throw new Error('試験が選択されていません。設定画面で試験を選択してください。');
       }

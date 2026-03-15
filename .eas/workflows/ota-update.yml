@@ -14,9 +14,18 @@ on:
       - 'package.json'
 
 jobs:
-  ota_update:
+  ota_update_default:
     type: update
     params:
       branch: production
+      platform: ios
+      message: "OTA: ${{ github.event.head_commit.message }}"
+
+  ota_update_ipass:
+    type: update
+    environment:
+      APP_VARIANT: ipass
+    params:
+      branch: production-ipass
       platform: ios
       message: "OTA: ${{ github.event.head_commit.message }}"

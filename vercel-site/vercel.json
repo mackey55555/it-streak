@@ -1,7 +1,11 @@
 {
   "rewrites": [
     { "source": "/privacy-policy", "destination": "/privacy-policy.html" },
-    { "source": "/support", "destination": "/support.html" }
+    { "source": "/support", "destination": "/support.html" },
+    { "source": "/ipass/", "destination": "/ipass/index.html" }
+  ],
+  "redirects": [
+    { "source": "/ipass", "destination": "/ipass/", "permanent": true }
   ],
   "headers": [
     {

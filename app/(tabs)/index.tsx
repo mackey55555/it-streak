@@ -10,6 +10,7 @@ import { useStreak } from '../../hooks/useStreak';
 import { useDailyProgress } from '../../hooks/useDailyProgress';
 import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
+import { IS_IPASS, IPASS_EXAM_ID } from '../../lib/variant';
 import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 
 const isExpoGo = Constants.appOwnership === 'expo';
@@ -44,7 +45,7 @@ export default function HomeScreen() {
   const streakScale = useRef(new Animated.Value(1)).current;
   const streakPulse = useRef(new Animated.Value(1)).current;
 
-  // 選択された試験を取得
+  // 選択された試験を取得（ipass版では自動設定）
   const fetchSelectedExam = useCallback(async () => {
     if (!user) return;
 
@@ -54,6 +55,18 @@ export default function HomeScreen() {
         .select('selected_exam_id')
         .eq('id', user.id)
         .single();
+
+      // ipass版では常にITパスポートを選択中として扱う
+      if (IS_IPASS) {
+        if (profile?.selected_exam_id !== IPASS_EXAM_ID) {
+          await supabase
+            .from('profiles')
+            .update({ selected_exam_id: IPASS_EXAM_ID })
+            .eq('id', user.id);
+        }
+        setSelectedExamName('ITパスポート試験');
+        return;
+      }
 
       if (profile?.selected_exam_id) {
         const { data: examData } = await supabase
@@ -327,15 +340,17 @@ export default function HomeScreen() {
             <Text variant="caption" style={styles.examBadgeText}>
               {selectedExamName}
             </Text>
-            <TouchableOpacity
-              onPress={() => {
-                impactMedium();
-                router.push('/(tabs)/settings');
-              }}
-              style={styles.examBadgeButton}
-            >
-              <Ionicons name="settings-outline" size={14} color={colors.textLight} />
-            </TouchableOpacity>
+            {!IS_IPASS && (
+              <TouchableOpacity
+                onPress={() => {
+                  impactMedium();
+                  router.push('/(tabs)/settings');
+                }}
+                style={styles.examBadgeButton}
+              >
+                <Ionicons name="settings-outline" size={14} color={colors.textLight} />
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
