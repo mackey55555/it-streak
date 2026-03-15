@@ -111,6 +111,54 @@ quizapp/
 3. ホームから学習を開始（通常/分野別/復習/ランダム）
 4. 毎日続けてストリークを伸ばす
 
+## 📱 アプリバリアント（マルチアプリ対応）
+
+同一ソースコードから、環境変数 `APP_VARIANT` でビルドを切り替えて複数のアプリを生成できます。
+
+| バリアント | アプリ名 | Bundle ID | 用途 |
+|---|---|---|---|
+| `default` | IT Streak | `com.techguild.itstreak` | 汎用版（複数試験対応） |
+| `ipass` | ITパスポート対策 | `com.techguild.ipass` | ITパスポート専用版 |
+
+### ビルドコマンド
+
+```bash
+# 汎用版
+eas build --profile production --platform ios
+
+# ITパスポート専用版
+APP_VARIANT=ipass eas build --profile production:ipass --platform ios
+```
+
+### OTA配信
+
+mainブランチへのマージ時に、EAS Workflowで両バリアントへ自動OTA配信されます。
+手動で配信する場合：
+
+```bash
+# 汎用版のみ
+eas update --channel production --message "修正内容"
+
+# ipass版のみ
+APP_VARIANT=ipass eas update --channel production-ipass --message "修正内容"
+```
+
+### バリアントごとの差分
+
+- **`app.config.ts`**: アプリ名・slug・bundleId・アイコン・AdMob ID・EAS Project IDを切り替え
+- **`eas.json`**: `development:ipass` / `preview:ipass` / `production:ipass` プロファイル
+- **`lib/variant.ts`**: アプリ内で `IS_IPASS` フラグを参照し、試験選択UIの表示/非表示やexamIdの固定を制御
+- **`assets/ipass/`**: ipass版専用のアイコン・スプラッシュ画像
+- **`vercel-site/ipass/`**: ipass版のランディングページ（`/ipass`）
+
+### 新しいバリアントを追加するには
+
+1. `app.config.ts` の `variantConfig` に新バリアントの設定を追加
+2. `eas.json` に対応するビルドプロファイルを追加
+3. `lib/variant.ts` に型と分岐ロジックを追加
+4. `assets/<variant>/` にアイコン類を配置
+5. `.eas/workflows/ota-update.yml` にOTAジョブを追加
+
 ## 🚀 今後の改善アイデア
 
 - [ ] ダークモード対応
