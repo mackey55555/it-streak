@@ -56,12 +56,14 @@ export default function HomeScreen() {
         .eq('id', user.id)
         .single();
 
-      // ipass版で試験未設定の場合は自動的にITパスポートを設定
-      if (IS_IPASS && !profile?.selected_exam_id) {
-        await supabase
-          .from('profiles')
-          .update({ selected_exam_id: IPASS_EXAM_ID })
-          .eq('id', user.id);
+      // ipass版では常にITパスポートを選択中として扱う
+      if (IS_IPASS) {
+        if (profile?.selected_exam_id !== IPASS_EXAM_ID) {
+          await supabase
+            .from('profiles')
+            .update({ selected_exam_id: IPASS_EXAM_ID })
+            .eq('id', user.id);
+        }
         setSelectedExamName('ITパスポート試験');
         return;
       }

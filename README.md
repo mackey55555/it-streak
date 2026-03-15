@@ -151,6 +151,17 @@ APP_VARIANT=ipass eas update --channel production-ipass --message "修正内容"
 - **`assets/ipass/`**: ipass版専用のアイコン・スプラッシュ画像
 - **`vercel-site/ipass/`**: ipass版のランディングページ（`/ipass`）
 
+### バリアント別の環境変数
+
+`APP_VARIANT` 以外に、バリアントごとに以下の環境変数（EAS Secrets）を設定します。
+
+- 共通
+  - `APP_VARIANT`: `default` / `ipass` を指定してビルドを切り替え（例: `APP_VARIANT=ipass`）
+- `ipass` バリアント専用
+  - `EXPO_PUBLIC_IPASS_PROJECT_ID`（必須）: ITパスポート版専用のEAS Project ID
+  - `ADMOB_IPASS_IOS_APP_ID`（必須）: ITパスポート版のAdMob iOS App ID
+  - `ADMOB_IPASS_ANDROID_APP_ID`（任意）: ITパスポート版のAdMob Android App ID
+
 ### 新しいバリアントを追加するには
 
 1. `app.config.ts` の `variantConfig` に新バリアントの設定を追加
