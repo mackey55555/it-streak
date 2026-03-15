@@ -20,9 +20,36 @@
     "production": {
       "autoIncrement": true,
       "channel": "production"
+    },
+    "development:ipass": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "channel": "development-ipass",
+      "env": {
+        "APP_VARIANT": "ipass"
+      }
+    },
+    "preview:ipass": {
+      "distribution": "internal",
+      "ios": {
+        "simulator": false,
+        "buildConfiguration": "Release"
+      },
+      "channel": "preview-ipass",
+      "env": {
+        "APP_VARIANT": "ipass"
+      }
+    },
+    "production:ipass": {
+      "autoIncrement": true,
+      "channel": "production-ipass",
+      "env": {
+        "APP_VARIANT": "ipass"
+      }
     }
   },
   "submit": {
-    "production": {}
+    "production": {},
+    "production:ipass": {}
   }
 }

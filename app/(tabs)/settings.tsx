@@ -10,6 +10,7 @@ import { impactMedium } from '../../lib/haptics';
 import { useAuth } from '../../hooks/useAuth';
 import { usePushNotifications } from '../../hooks/usePushNotifications';
 import { supabase } from '../../lib/supabase';
+import { IS_IPASS } from '../../lib/variant';
 
 const isExpoGo = Constants.appOwnership === 'expo';
 
@@ -385,30 +386,32 @@ export default function SettingsScreen() {
           </View>
         )}
 
-        {/* 試験選択 */}
-        <View style={styles.section}>
-          <Text variant="h3" style={styles.sectionTitle}>学習する試験</Text>
-          <Card style={styles.card}>
-            <TouchableOpacity
-              style={styles.menuItem}
-              onPress={() => { impactMedium(); setShowExamModal(true); }}
-              activeOpacity={0.7}
-            >
-              <View style={styles.menuContent}>
-                <View style={styles.menuTitleRow}>
-                  <Ionicons name="school-outline" size={20} color={colors.primary} style={styles.menuIcon} />
-                  <View style={styles.menuTextContainer}>
-                    <Text variant="h3">現在の試験</Text>
-                    <Text variant="body" color={colors.textLight} style={styles.menuDescription}>
-                      {selectedExamName || '未選択'}
-                    </Text>
+        {/* 試験選択（ipass版では非表示） */}
+        {!IS_IPASS && (
+          <View style={styles.section}>
+            <Text variant="h3" style={styles.sectionTitle}>学習する試験</Text>
+            <Card style={styles.card}>
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => { impactMedium(); setShowExamModal(true); }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.menuContent}>
+                  <View style={styles.menuTitleRow}>
+                    <Ionicons name="school-outline" size={20} color={colors.primary} style={styles.menuIcon} />
+                    <View style={styles.menuTextContainer}>
+                      <Text variant="h3">現在の試験</Text>
+                      <Text variant="body" color={colors.textLight} style={styles.menuDescription}>
+                        {selectedExamName || '未選択'}
+                      </Text>
+                    </View>
                   </View>
+                  <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
                 </View>
-                <Ionicons name="chevron-forward" size={20} color={colors.textLight} />
-              </View>
-            </TouchableOpacity>
-          </Card>
-        </View>
+              </TouchableOpacity>
+            </Card>
+          </View>
+        )}
 
         {/* 通知設定 */}
         <View style={styles.section}>
@@ -471,9 +474,9 @@ export default function SettingsScreen() {
         </Text>
       </ScrollView>
 
-      {/* 試験選択モーダル */}
+      {/* 試験選択モーダル（ipass版では非表示） */}
       <Modal
-        visible={showExamModal}
+        visible={!IS_IPASS && showExamModal}
         animationType="slide"
         transparent={true}
         onRequestClose={() => setShowExamModal(false)}
