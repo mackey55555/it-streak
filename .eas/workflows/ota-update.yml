@@ -23,7 +23,8 @@ jobs:
 
   ota_update_ipass:
     type: update
-    environment:
+    environment: production
+    env:
       APP_VARIANT: ipass
     params:
       branch: production-ipass
