@@ -1,0 +1,14 @@
+[
+  {
+    "exam": "basic",
+    "category": "technology",
+    "question_text": "ここに問題文を書く",
+    "choice_a": "選択肢A",
+    "choice_b": "選択肢B",
+    "choice_c": "選択肢C",
+    "choice_d": "選択肢D",
+    "correct_answer": "A",
+    "explanation": "解説文をここに書く",
+    "difficulty": 2
+  }
+]

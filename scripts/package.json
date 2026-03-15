@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "seed": "tsx seed-questions.ts",
-    "merge": "tsx merge-questions.ts"
+    "merge": "tsx merge-questions.ts",
+    "import": "tsx import-questions.ts"
   },
   "devDependencies": {
     "dotenv": "^17.2.3",
