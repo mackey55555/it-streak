@@ -4,6 +4,7 @@
  * ※ react-native-google-mobile-ads の TestIds は Expo Go でクラッシュするためここでは import せず、同値で定義。
  */
 import { Platform } from 'react-native';
+import { IS_IPASS } from './variant';
 
 const useTestIds = __DEV__;
 
@@ -26,14 +27,21 @@ const TEST_IDS = Platform.select({
   },
 })!;
 
-// 本番用ID
-const PRODUCTION = {
-  APP_ID_IOS: 'ca-app-pub-3556606235552037~5046764657',
-  APP_ID_ANDROID: 'ca-app-pub-3556606235552037~5046764658',
+// 本番用ID（汎用版）
+const PRODUCTION_DEFAULT = {
   BANNER: 'ca-app-pub-3556606235552037/4675664336',
   REWARDED: 'ca-app-pub-3556606235552037/5572252532',
   INTERSTITIAL: 'ca-app-pub-3556606235552037/5453958763',
 };
+
+// 本番用ID（ITパスポート版）
+const PRODUCTION_IPASS = {
+  BANNER: 'ca-app-pub-3556606235552037/8378161073',
+  REWARDED: 'ca-app-pub-3556606235552037/8120108371',
+  INTERSTITIAL: 'ca-app-pub-3556606235552037/1993683727',
+};
+
+const PRODUCTION = IS_IPASS ? PRODUCTION_IPASS : PRODUCTION_DEFAULT;
 
 export const adUnitIds = {
   banner: useTestIds ? TEST_IDS.ADAPTIVE_BANNER : PRODUCTION.BANNER,
