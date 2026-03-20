@@ -4,10 +4,19 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
+    "start:ipass": "APP_VARIANT=ipass expo start --dev-client",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "seed": "cd scripts && npm install && npx tsx seed-questions.ts"
+    "seed": "cd scripts && npm install && npx tsx seed-questions.ts",
+    "build:dev": "eas build --profile development --platform ios",
+    "build:dev:ipass": "APP_VARIANT=ipass eas build --profile development:ipass --platform ios",
+    "build:preview": "eas build --profile preview --platform ios",
+    "build:preview:ipass": "APP_VARIANT=ipass eas build --profile preview:ipass --platform ios",
+    "build:prod": "eas build --profile production --platform ios",
+    "build:prod:ipass": "APP_VARIANT=ipass eas build --profile production:ipass --platform ios",
+    "submit:prod": "eas submit --profile production --platform ios",
+    "submit:prod:ipass": "APP_VARIANT=ipass eas submit --profile production:ipass --platform ios"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^2.2.0",
